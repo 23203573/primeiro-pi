@@ -23,7 +23,8 @@ st.sidebar.header("Escolha seu Açaí")
 tamanho = st.sidebar.selectbox("Tamanho:", ["Pequeno", "Médio", "Grande"])
 adicionais = st.sidebar.multiselect(
     "Adicionais:", 
-    ["Leite em pó", "Granola", "Paçoca", "Banana", "Morango", "Leite condensado"])
+    ["Leite em pó", "Granola", "Paçoca", "Banana", "Morango", "Leite condensado"]
+)
 
 preco_base = {"Pequeno": 10, "Médio": 15, "Grande": 20}
 preco_final = preco_base[tamanho] + len(adicionais) * 2
