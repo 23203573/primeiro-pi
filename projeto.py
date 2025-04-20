@@ -1,10 +1,99 @@
 import streamlit as st
 
+st.markdown(
+    """
+    <style>
+        /* Fundo geral do app */
+        .stApp {
+            background-color: #F2BBC5;
+        }
+
+        /* Cor da sidebar (lateral onde fica login/senha) */
+        section[data-testid="stSidebar"] {
+            background-color: #732C4D;
+        }
+
+        /* Títulos principais (h1, h2, h3) */
+        h1, h2, h3 {
+            color: #732C4D !important;
+        }
+
+        /* Título "Área do Usuário" */
+        .stSidebar .css-1lsbznw {
+            color: #ffffff;
+        }
+
+        /* Labels dos inputs ("Usuário", "Senha", etc) */
+        .stTextInput label,
+        .stSelectbox label,
+        .stRadio label,
+        .stMultiselect label {
+            color: #ffffff;
+        }
+
+        /* Ajusta cor de parágrafos e texto em geral */
+        p, label, .stRadio > div {
+            color: #732C4D !important;
+        }
+
+        /* Área do usuário e texto branco */
+        .stTextInput input,
+        .stSelectbox select,
+        .stRadio label,
+        .stMultiselect div {
+            color: white !important;
+        }
+
+        /* Botões personalizados */
+        button[kind="primary"], button[kind="secondary"] {
+            background-color: #4c122d !important;
+            color: white !important;
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* Garante que o texto interno dos botões também fique branco */
+        button[kind="primary"] *, button[kind="secondary"] * {
+            color: white !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ------------------------------
+# CONFIG LOGIN DO PROPRIETÁRIO
+# ------------------------------
+USUARIO_PROPRIETARIO = "admin"
+SENHA_PROPRIETARIO = "1234"  # Troque para uma senha segura depois
+
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+
+with st.sidebar:
+    st.markdown("### 👤 Área do Proprietário")
+    if not st.session_state.logado:
+        usuario = st.text_input("Usuário")
+        senha = st.text_input("Senha", type="password")
+        if st.button("Entrar"):
+            if usuario == USUARIO_PROPRIETARIO and senha == SENHA_PROPRIETARIO:
+                st.success("Login realizado com sucesso!")
+                st.session_state.logado = True
+            else:
+                st.error("Usuário ou senha incorretos.")
+    else:
+        st.success("Você está logado como proprietário.")
+        if st.button("Sair"):
+            st.session_state.logado = False
+
+# ------------------------------------
+# SISTEMA DE PEDIDOS (visível a todos)
+# ------------------------------------
 # ------------------------------
 # ADICIONAIS COM VALORES
 # ------------------------------
 
-# Adicionais inclusos: já estão no valor base do copo
 adicionais_inclusos = {
     "Mousse Ninho": 2.00, "Mousse Ovomaltine": 3.00, "Mousse Limão": 2.00,
     "Mousse Amendoim": 2.50, "Mousse Morango": 2.50, "Uva": 2.00, "Banana": 2.00,
@@ -14,15 +103,10 @@ adicionais_inclusos = {
     "Cobertura Morango": 1.00
 }
 
-# Adicionais extras: cobrados à parte
 adicionais_extras = {
     "Bis": 2.00, "Kit Kat": 2.50, "Confete": 2.00,
     "Nescau Ball": 2.00, "Trento": 2.50
 }
-
-# ------------------------------
-# FORMATAR ITENS PARA MULTISELECT
-# ------------------------------
 
 opcoes_inclusos = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_inclusos.items()]
 mapa_inclusos = {f"{nome} - R${preco:.2f}": nome for nome, preco in adicionais_inclusos.items()}
@@ -30,19 +114,15 @@ mapa_inclusos = {f"{nome} - R${preco:.2f}": nome for nome, preco in adicionais_i
 opcoes_extras = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_extras.items()]
 mapa_extras = {f"{nome} - R${preco:.2f}": nome for nome, preco in adicionais_extras.items()}
 
-# ------------------------------
-# INICIALIZAR VARIÁVEIS NO SESSION STATE
-# ------------------------------
-
 for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionados"]:
     if key not in st.session_state:
         st.session_state[key] = "" if key == "tamanho" else []
 
 # ------------------------------
-# INTERFACE DO APLICATIVO
+# INTERFACE PRINCIPAL
 # ------------------------------
 
-st.title("Monte seu Copo de Açaí 🍧")
+st.title("Doces Lalumare 🍧")
 
 tamanho_opcao = st.selectbox(
     "Escolha o tamanho do copo:", 
@@ -55,7 +135,6 @@ if tamanho_opcao != st.session_state.tamanho:
     st.session_state.adicionais_selecionados = []
     st.session_state.adicionais_extras_selecionados = []
 
-# Regras por tamanho
 tamanhos = {
     "300ml - R$18,00": {"min": 3, "max": 4, "preco": 18.00},
     "500ml - R$20,00": {"min": 3, "max": 6, "preco": 20.00}
@@ -81,11 +160,9 @@ novos_adicionais_extras_formatados = st.multiselect(
     disabled=adicionais_disabled
 )
 
-# Atualiza session_state com os novos selecionados
 st.session_state.adicionais_selecionados = [mapa_inclusos[nome] for nome in novos_adicionais_inclusos_formatados]
 st.session_state.adicionais_extras_selecionados = [mapa_extras[nome] for nome in novos_adicionais_extras_formatados]
 
-# Validação de regras
 total_adicionais = len(st.session_state.adicionais_selecionados) + len(st.session_state.adicionais_extras_selecionados)
 erro_limite = not (min_adicionais <= total_adicionais <= max_adicionais)
 
@@ -93,58 +170,73 @@ if erro_limite:
     st.error(f"Você precisa selecionar entre {min_adicionais} e {max_adicionais} adicionais. Selecionados: {total_adicionais}")
 
 # ------------------------------
-# CAMPOS DO CLIENTE
+# CAMPOS DO CLIENTe
 # ------------------------------
 
-st.subheader("Dados do Cliente")
-
-nome = st.text_input("Nome Completo:")
+st.subheader("Dados do cliente")
+nome = st.text_input("Nome completo:")
 endereco = st.text_input("Endereço para entrega:")
-
 forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro"])
 troco = st.text_input("Troco para quanto?") if forma_pagamento == "Dinheiro" else ""
-
 tipo_pedido = st.selectbox("Tipo de pedido:", ["", "Entrega", "Retirada"])
 
 # ------------------------------
 # RESUMO DO PEDIDO
 # ------------------------------
 
-if any([st.session_state.tamanho, nome, endereco, st.session_state.adicionais_selecionados, st.session_state.adicionais_extras_selecionados]):
-    st.subheader("Resumo do Pedido")
+st.markdown("## 🧾 Resumo do Pedido")
 
-    adicionais_str = ', '.join(st.session_state.adicionais_selecionados) or "Nenhum"
-    extras_str = ', '.join(st.session_state.adicionais_extras_selecionados) or "Nenhum"
-    total = valor_base + sum(adicionais_extras[n] for n in st.session_state.adicionais_extras_selecionados)
+resumo_html = f"""
+<div style="background-color: #ffffff; padding: 20px; border-radius: 12px;
+     border: 1px solid #ddd; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); margin-top: 10px; color: #000000;">
+    <p><strong>🍧 Tamanho:</strong> {st.session_state.tamanho or 'Não selecionado'}</p>
+    <p><strong>✅ Adicionais Inclusos:</strong> {"<br>".join(st.session_state.adicionais_selecionados) or 'Nenhum'}</p>
+    <p><strong>➕ Adicionais Extras:</strong> {"<br>".join(st.session_state.adicionais_extras_selecionados) or 'Nenhum'}</p>
+    <p><strong>👤 Cliente:</strong> {nome or 'Não informado'}</p>
+    <p><strong>📍 Endereço:</strong> {endereco or 'Não informado'}</p>
+    <p><strong>💳 Pagamento:</strong> {forma_pagamento}</p>
+    <p><strong>💰 Troco:</strong> {troco or 'N/A'}</p>
+    <p><strong>🚚 Tipo de Pedido:</strong> {tipo_pedido or 'Não informado'}</p>
+</div>
+"""
 
-    st.markdown(
-        f"""
-        <div style='padding: 15px; border-radius: 10px; background-color: #f5f5f5;
-                    box-shadow: 2px 2px 10px #ccc; color: #000;'>
-            <strong>Nome:</strong> {nome or '-'}<br>
-            <strong>Endereço:</strong> {endereco or '-'}<br>
-            <strong>Tipo de pedido:</strong> {tipo_pedido or '-'}<br>
-            <strong>Forma de pagamento:</strong> {forma_pagamento}<br>
-            {"<strong>Troco para:</strong> R$ " + troco if forma_pagamento == "Dinheiro" and troco else ""}
-            <br><br>
-            <strong>Tamanho:</strong> {st.session_state.tamanho or '-'}<br>
-            <strong>Adicionais:</strong> {adicionais_str}<br>
-            <strong>Extras:</strong> {extras_str}<br>
-            <strong>Total a pagar:</strong> R$ {total:.2f}
-        </div>
-        """, unsafe_allow_html=True
-    )
-else:
-    st.info("O resumo do pedido será exibido aqui quando você preencher os dados 😉")
+st.markdown(resumo_html, unsafe_allow_html=True)
 
 # ------------------------------
-# BOTÕES DE AÇÃO
+# BOTÃO DE CONFIRMAR
 # ------------------------------
 
+# Botão de limpar pedido
 if st.button("Limpar Pedido"):
-    st.session_state.tamanho = ""
-    st.session_state.adicionais_selecionados = []
-    st.session_state.adicionais_extras_selecionados = []
+    # Limpa as variáveis do estado da sessão
+    st.session_state.tamanho = ""  # Limpa a seleção do tamanho
+    st.session_state.adicionais_selecionados = []  # Limpa os adicionais selecionados
+    st.session_state.adicionais_extras_selecionados = []  # Limpa os adicionais extras selecionados
+    st.session_state.nome = ""  # Limpa o nome do cliente
+    st.session_state.endereco = ""  # Limpa o endereço do cliente
+    st.session_state.forma_pagamento = ""  # Limpa a forma de pagamento
+    st.session_state.troco = ""  # Limpa o campo de troco
+    st.session_state.tipo_pedido = ""  # Limpa o tipo de pedido
+
+    # Recarrega a aplicação para limpar o estado e os campos da interface
+    st.rerun()  # Usando a função correta para reiniciar a aplicação
 
 confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
 st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True)
+
+# -----------------------------------
+# ÁREA DO PROPRIETÁRIO (requer login)
+# -----------------------------------
+if st.session_state.logado:
+    st.markdown("---")
+    st.markdown("## 🔐 Painel do Proprietário")
+    st.info("Aqui você pode visualizar os pedidos, gerenciar ingredientes, ver relatórios, etc.")
+    # Aqui você pode futuramente adicionar funcionalidades como:
+    # - visualização de pedidos feitos
+    # - exportação para Excel
+    # - gestão de estoque
+    # - controle de vendas por dia
+
+    # Exemplo básico
+    st.write("👷‍♂️ Área em construção...")
+
