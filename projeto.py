@@ -1,5 +1,53 @@
 import streamlit as st
+import pandas as pd
 
+# -----------------------------------
+# DASHBOARD (área do proprietário)
+# -----------------------------------
+
+def exibir_dashboard():
+    st.title("📊 Dashboard de Vendas")
+    st.markdown("Bem-vindo ao painel de controle da **Doces Lalumare**!")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total de Vendas", "R$ 1.250,00")
+    col2.metric("Pedidos no Mês", "42")
+    col3.metric("Ticket Médio", "R$ 29,76")
+
+    st.subheader("📈 Vendas da Semana")
+    dados = {
+        "Dia": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+        "Vendas (R$)": [120, 150, 90, 180, 200, 240, 210]
+    }
+    df = pd.DataFrame(dados)
+    st.bar_chart(df.set_index("Dia"))
+
+    st.subheader("🥄 Adicionais Mais Pedidos")
+
+    # Simulação de quantidade de pedidos por adicional
+    dados_adicionais = {
+        "Morango": 28,
+        "Leite Condensado": 25,
+        "Granola Tradicional": 18,
+        "Mousse Ninho": 32,
+        "Paçoca": 20,
+        "Kit Kat": 15,
+        "Bis": 12,
+        "Trento": 10
+    }
+    df_adicionais = pd.DataFrame(list(dados_adicionais.items()), columns=["Adicional", "Quantidade de Pedidos"])
+    st.bar_chart(df_adicionais.set_index("Adicional"))
+
+    st.subheader("📋 Últimos Pedidos")
+    st.table(pd.DataFrame({
+        "Cliente": ["Ana", "Carlos", "Beatriz"],
+        "Data": ["20/04", "20/04", "19/04"],
+        "Valor": ["R$ 18,00", "R$ 20,00", "R$ 21,50"]
+    }))
+
+# -----------------------------------
+# LAYOUT DA PÁGINA (CSS)
+# -----------------------------------
 st.markdown(
     """
     <style>
@@ -88,31 +136,33 @@ with st.sidebar:
             st.session_state.logado = False
 
 # ------------------------------------
-# SISTEMA DE PEDIDOS (visível a todos)
+# MOSTRAR DASHBOARD APÓS LOGIN
 # ------------------------------------
-# ------------------------------
-# ADICIONAIS COM VALORES
-# ------------------------------
+if st.session_state.logado:
+    exibir_dashboard()
+else:
 
-adicionais_inclusos = {
-    "Mousse Ninho": 2.00, "Mousse Ovomaltine": 3.00, "Mousse Limão": 2.00,
-    "Mousse Amendoim": 2.50, "Mousse Morango": 2.50, "Uva": 2.00, "Banana": 2.00,
-    "Morango": 2.50, "Kiwi": 3.50, "Amendoim": 1.50, "Granola Tradicional": 2.00,
-    "Leite Condensado": 2.00, "Leite em Pó": 1.50, "Mel": 2.00, "Paçoca": 1.50,
-    "Castanha de Caju": 2.00, "Cobertura Caramelo": 1.00, "Cobertura Chocolate": 1.00,
-    "Cobertura Morango": 1.00
-}
+# -------------------------------------
+# SISTEMA DE PEDIDOS (visível a todos)
+ # -------------------------------------
 
-adicionais_extras = {
-    "Bis": 2.00, "Kit Kat": 2.50, "Confete": 2.00,
-    "Nescau Ball": 2.00, "Trento": 2.50
-}
+    adicionais_inclusos = {
+        "Mousse Ninho": 2.00, "Mousse Ovomaltine": 3.00, "Mousse Limão": 2.00,
+        "Mousse Amendoim": 2.50, "Mousse Morango": 2.50, "Uva": 2.00, "Banana": 2.00,
+        "Morango": 2.50, "Kiwi": 3.50, "Amendoim": 1.50, "Granola Tradicional": 2.00,
+        "Leite Condensado": 2.00, "Leite em Pó": 1.50, "Mel": 2.00, "Paçoca": 1.50,
+        "Castanha de Caju": 2.00, "Cobertura Caramelo": 1.00, "Cobertura Chocolate": 1.00,
+        "Cobertura Morango": 1.00
+    }
 
-opcoes_inclusos = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_inclusos.items()]
-mapa_inclusos = {f"{nome} - R${preco:.2f}": nome for nome, preco in adicionais_inclusos.items()}
+    adicionais_extras = {
+        "Bis": 2.00, "Kit Kat": 2.50, "Confete": 2.00,
+        "Nescau Ball": 2.00, "Trento": 2.50
+    }
 
-opcoes_extras = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_extras.items()]
-mapa_extras = {f"{nome} - R${preco:.2f}": nome for nome, preco in adicionais_extras.items()}
+    opcoes_inclusos = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_inclusos.items()]
+    opcoes_extras = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_extras.items()]
+
 
 for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionados"]:
     if key not in st.session_state:
@@ -122,25 +172,31 @@ for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionado
 # INTERFACE PRINCIPAL
 # ------------------------------
 
-st.title("Doces Lalumare 🍧")
+# ------------------------------
+# INTERFACE CONDICIONAL
+# ------------------------------
+if st.session_state.logado:
+    exibir_dashboard()
+else:
+    st.title("Doces Lalumare 🍧")
 
-tamanho_opcao = st.selectbox(
-    "Escolha o tamanho do copo:", 
-    ["", "300ml - R$18,00", "500ml - R$20,00"],
-    index=0 if st.session_state.tamanho == "" else ["", "300ml - R$18,00", "500ml - R$20,00"].index(st.session_state.tamanho)
-)
+    tamanho_opcao = st.selectbox(
+        "Escolha o tamanho do copo:", 
+        ["", "300ml - R$18,00", "500ml - R$20,00"],
+        index=0 if st.session_state.tamanho == "" else ["", "300ml - R$18,00", "500ml - R$20,00"].index(st.session_state.tamanho)
+    )
 
-if tamanho_opcao != st.session_state.tamanho:
-    st.session_state.tamanho = tamanho_opcao
-    st.session_state.adicionais_selecionados = []
-    st.session_state.adicionais_extras_selecionados = []
+    if tamanho_opcao != st.session_state.tamanho:
+        st.session_state.tamanho = tamanho_opcao
+        st.session_state.adicionais_selecionados = []
+        st.session_state.adicionais_extras_selecionados = []
 
-tamanhos = {
-    "300ml - R$18,00": {"min": 3, "max": 4, "preco": 18.00},
-    "500ml - R$20,00": {"min": 3, "max": 6, "preco": 20.00}
-}
-regras = tamanhos.get(st.session_state.tamanho, {"min": 0, "max": 0, "preco": 0.00})
-min_adicionais, max_adicionais, valor_base = regras["min"], regras["max"], regras["preco"]
+    tamanhos = {
+        "300ml - R$18,00": {"min": 3, "max": 4, "preco": 18.00},
+        "500ml - R$20,00": {"min": 3, "max": 6, "preco": 20.00}
+    }
+    regras = tamanhos.get(st.session_state.tamanho, {"min": 0, "max": 0, "preco": 0.00})
+    min_adicionais, max_adicionais, valor_base = regras["min"], regras["max"], regras["preco"]
 
 adicionais_disabled = st.session_state.tamanho == ""
 if adicionais_disabled:
@@ -170,7 +226,7 @@ if erro_limite:
     st.error(f"Você precisa selecionar entre {min_adicionais} e {max_adicionais} adicionais. Selecionados: {total_adicionais}")
 
 # ------------------------------
-# CAMPOS DO CLIENTe
+# CAMPOS DO CLIENTE
 # ------------------------------
 
 st.subheader("Dados do cliente")
@@ -209,34 +265,45 @@ st.markdown(resumo_html, unsafe_allow_html=True)
 # Botão de limpar pedido
 if st.button("Limpar Pedido"):
     # Limpa as variáveis do estado da sessão
-    st.session_state.tamanho = ""  # Limpa a seleção do tamanho
-    st.session_state.adicionais_selecionados = []  # Limpa os adicionais selecionados
-    st.session_state.adicionais_extras_selecionados = []  # Limpa os adicionais extras selecionados
-    st.session_state.nome = ""  # Limpa o nome do cliente
-    st.session_state.endereco = ""  # Limpa o endereço do cliente
-    st.session_state.forma_pagamento = ""  # Limpa a forma de pagamento
-    st.session_state.troco = ""  # Limpa o campo de troco
-    st.session_state.tipo_pedido = ""  # Limpa o tipo de pedido
+    st.session_state.tamanho = ""
+    st.session_state.adicionais_selecionados = []
+    st.session_state.adicionais_extras_selecionados = []
+    st.session_state.nome = ""
+    st.session_state.endereco = ""
+    st.session_state.forma_pagamento = ""
+    st.session_state.troco = ""
+    st.session_state.tipo_pedido = ""
 
     # Recarrega a aplicação para limpar o estado e os campos da interface
-    st.rerun()  # Usando a função correta para reiniciar a aplicação
+    st.rerun()
 
 confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
 st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True)
 
-# -----------------------------------
-# ÁREA DO PROPRIETÁRIO (requer login)
-# -----------------------------------
-if st.session_state.logado:
-    st.markdown("---")
-    st.markdown("## 🔐 Painel do Proprietário")
-    st.info("Aqui você pode visualizar os pedidos, gerenciar ingredientes, ver relatórios, etc.")
-    # Aqui você pode futuramente adicionar funcionalidades como:
-    # - visualização de pedidos feitos
-    # - exportação para Excel
-    # - gestão de estoque
-    # - controle de vendas por dia
+# ------------------------------------
+# DASHBOARD DO PROPRIETÁRIO
+# ------------------------------------
+def exibir_dashboard():
+    st.title("📊 Dashboard de Vendas")
+    st.markdown("Bem-vindo ao painel de controle da **Doces Lalumare**!")
 
-    # Exemplo básico
-    st.write("👷‍♂️ Área em construção...")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total de Vendas", "R$ 1.250,00")
+    col2.metric("Pedidos no Mês", "42")
+    col3.metric("Ticket Médio", "R$ 29,76")
 
+    st.subheader("📈 Vendas da Semana")
+    import pandas as pd
+    dados = {
+        "Dia": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+        "Vendas (R$)": [120, 150, 90, 180, 200, 240, 210]
+    }
+    df = pd.DataFrame(dados)
+    st.bar_chart(df.set_index("Dia"))
+
+    st.subheader("📋 Últimos Pedidos")
+    st.table(pd.DataFrame({
+        "Cliente": ["Ana", "Carlos", "Beatriz"],
+        "Data": ["20/04", "20/04", "19/04"],
+        "Valor": ["R$ 18,00", "R$ 20,00", "R$ 21,50"]
+    }))
