@@ -2,13 +2,13 @@
 /* Define o estilo genérico para os elementos body, div, p e span, garantindo que a fonte e as cores sejam aplicadas de maneira global. */
 body, div, p, span {
     font-family: 'Arial', sans-serif !important;   /* Define a fonte para todos os elementos */
-    background-color: #8C3B61 !important;        /* Define o fundo */
+    background-color: #4c122d !important;        /* Define o fundo */
     color: #E0DFF2 !important;                   /* Define a cor do texto */
 }
 
 /* Estilos específicos para o título */
 .titulo {
-    color: #F2BBC5 !important;                       /* Define a cor do texto do título */
+    color: #ffffff !important;                       /* Define a cor do texto do título */
     font-family: 'Apple Chancery', cursive !important; /* Define a fonte do título */
     text-align: center !important;                     /* Centraliza o texto do título */
     font-size: 36px !important;                        /* Define o tamanho da fonte */
@@ -22,7 +22,7 @@ body, div, p, span {
     margin-top: 20px !important;                             /* Adiciona uma margem superior de 20px ao bloco */
     box-shadow: 0px 4px 6px #732C4D !important;            /* Adiciona uma sombra suave ao bloco */
     font-family: 'Verdana', sans-serif !important;           /* Define a fonte do texto do pedido */
-    color: #F2BBC5 !important;                             /* Define a cor do texto dentro do bloco */
+    color:#F2BBC5  !important;                             /* Define a cor do texto dentro do bloco */
 }
 
 /* Estilos específicos para os botões do Streamlit */
@@ -34,6 +34,6 @@ button.stButton > button {
 
 /* Estilos para a barra lateral do Streamlit */
 div[class^="css-1d391kg"] {
-    background-color: #e0f715 !important; /* Define o fundo da barra lateral */
+    background-color: hsl(280, 75%, 21%) !important; /* Define o fundo da barra lateral */
     color: rgb(24, 2, 39) !important;     /* Define a cor do texto na barra lateral */
 }
