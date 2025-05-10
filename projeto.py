@@ -46,7 +46,7 @@ def exibir_dashboard():
     }))
 
 # -----------------------------------
-# LAYOUT DA PÁGINA (CSS)
+# CUSTOMIZAÇÃO DA PÁGINA (CSS)
 # -----------------------------------
 st.markdown(
     """
@@ -111,10 +111,10 @@ st.markdown(
 
 
 # ------------------------------
-# CONFIG LOGIN DO PROPRIETÁRIO
+# ÁREA DE LOGIN DO PROPRIETÁRIO
 # ------------------------------
 USUARIO_PROPRIETARIO = "admin"
-SENHA_PROPRIETARIO = "1234"  # Troque para uma senha segura depois
+SENHA_PROPRIETARIO = "1234"  # Trocar por uma senha segura depois
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -144,23 +144,19 @@ else:
 
 # -------------------------------------
 # SISTEMA DE PEDIDOS (visível a todos)
- # -------------------------------------
+# -------------------------------------
 
-    adicionais_inclusos = {
-        "Mousse Ninho": 2.00, "Mousse Ovomaltine": 3.00, "Mousse Limão": 2.00,
-        "Mousse Amendoim": 2.50, "Mousse Morango": 2.50, "Uva": 2.00, "Banana": 2.00,
-        "Morango": 2.50, "Kiwi": 3.50, "Amendoim": 1.50, "Granola Tradicional": 2.00,
-        "Leite Condensado": 2.00, "Leite em Pó": 1.50, "Mel": 2.00, "Paçoca": 1.50,
-        "Castanha de Caju": 2.00, "Cobertura Caramelo": 1.00, "Cobertura Chocolate": 1.00,
-        "Cobertura Morango": 1.00
-    }
+    adicionais_inclusos = [
+        "Mousse Ninho", "Mousse Ovomaltine", "Mousse Limão", "Mousse Amendoim", "Mousse Morango", "Uva", "Banana", "Morango", "Kiwi", "Amendoim", "Granola Tradicional",
+"Leite Condensado", "Leite em Pó", "Mel", "Paçoca", "Castanha de Caju", "Cobertura Caramelo", "Cobertura Chocolate", "Cobertura Morango"
+    ]
 
     adicionais_extras = {
         "Bis": 2.00, "Kit Kat": 2.50, "Confete": 2.00,
         "Nescau Ball": 2.00, "Trento": 2.50
     }
 
-    opcoes_inclusos = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_inclusos.items()]
+    opcoes_inclusos = list(adicionais_inclusos)
     opcoes_extras = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_extras.items()]
 
 
@@ -170,10 +166,6 @@ for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionado
 
 # ------------------------------
 # INTERFACE PRINCIPAL
-# ------------------------------
-
-# ------------------------------
-# INTERFACE CONDICIONAL
 # ------------------------------
 if st.session_state.logado:
     exibir_dashboard()
@@ -206,7 +198,7 @@ st.subheader("Escolha seus adicionais")
 
 novos_adicionais_inclusos_formatados = st.multiselect(
     "Adicionais inclusos:", opcoes_inclusos,
-    default=[f"{nome} - R${adicionais_inclusos[nome]:.2f}" for nome in st.session_state.adicionais_selecionados],
+    default=st.session_state.adicionais_selecionados,
     disabled=adicionais_disabled
 )
 
@@ -216,8 +208,8 @@ novos_adicionais_extras_formatados = st.multiselect(
     disabled=adicionais_disabled
 )
 
-st.session_state.adicionais_selecionados = [mapa_inclusos[nome] for nome in novos_adicionais_inclusos_formatados]
-st.session_state.adicionais_extras_selecionados = [mapa_extras[nome] for nome in novos_adicionais_extras_formatados]
+st.session_state.adicionais_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_inclusos_formatados]
+st.session_state.adicionais_extras_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_extras_formatados]
 
 total_adicionais = len(st.session_state.adicionais_selecionados) + len(st.session_state.adicionais_extras_selecionados)
 erro_limite = not (min_adicionais <= total_adicionais <= max_adicionais)
@@ -228,18 +220,23 @@ if erro_limite:
 # ------------------------------
 # CAMPOS DO CLIENTE
 # ------------------------------
-
 st.subheader("Dados do cliente")
 nome = st.text_input("Nome completo:")
+whatsapp = st.text_input("WhatsApp (formato: (DDD) 91234-5678):")
 endereco = st.text_input("Endereço para entrega:")
-forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro"])
+forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"])
 troco = st.text_input("Troco para quanto?") if forma_pagamento == "Dinheiro" else ""
 tipo_pedido = st.selectbox("Tipo de pedido:", ["", "Entrega", "Retirada"])
 
 # ------------------------------
+# CÁLCULO DO VALOR TOTAL
+# ------------------------------
+valor_extras = sum(adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados)
+valor_total = valor_base + valor_extras
+
+# ------------------------------
 # RESUMO DO PEDIDO
 # ------------------------------
-
 st.markdown("## 🧾 Resumo do Pedido")
 
 resumo_html = f"""
@@ -249,20 +246,35 @@ resumo_html = f"""
     <p><strong>✅ Adicionais Inclusos:</strong> {"<br>".join(st.session_state.adicionais_selecionados) or 'Nenhum'}</p>
     <p><strong>➕ Adicionais Extras:</strong> {"<br>".join(st.session_state.adicionais_extras_selecionados) or 'Nenhum'}</p>
     <p><strong>👤 Cliente:</strong> {nome or 'Não informado'}</p>
+    <p><strong>📱 WhatsApp:</strong> {whatsapp or 'Não informado'}</p>
     <p><strong>📍 Endereço:</strong> {endereco or 'Não informado'}</p>
     <p><strong>💳 Pagamento:</strong> {forma_pagamento}</p>
     <p><strong>💰 Troco:</strong> {troco or 'N/A'}</p>
     <p><strong>🚚 Tipo de Pedido:</strong> {tipo_pedido or 'Não informado'}</p>
+    <p><strong> 🟢 Valor Total: R$ {valor_total:.2f}
 </div>
 """
 
 st.markdown(resumo_html, unsafe_allow_html=True)
 
-# ------------------------------
-# BOTÃO DE CONFIRMAR
-# ------------------------------
 
-# Botão de limpar pedido
+# --------------------------
+# BOTÃO DE CONFIRMAR PEDIDO 
+# --------------------------
+confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
+
+if st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True):
+    if not nome or not endereco or not forma_pagamento:
+        st.error("Por favor, preencha todos os dados do cliente.")
+    elif erro_limite:
+        st.error("Quantidade de adicionais fora do limite.")
+    else:
+        st.success("Pedido confirmado! Em breve o estabelecimento entrará em contato!")
+
+
+# ------------------------------
+# BOTÃO DE LIMPAR CONFIRMAR
+# ------------------------------
 if st.button("Limpar Pedido"):
     # Limpa as variáveis do estado da sessão
     st.session_state.tamanho = ""
@@ -277,33 +289,4 @@ if st.button("Limpar Pedido"):
     # Recarrega a aplicação para limpar o estado e os campos da interface
     st.rerun()
 
-confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
-st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True)
-
-# ------------------------------------
-# DASHBOARD DO PROPRIETÁRIO
-# ------------------------------------
-def exibir_dashboard():
-    st.title("📊 Dashboard de Vendas")
-    st.markdown("Bem-vindo ao painel de controle da **Doces Lalumare**!")
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total de Vendas", "R$ 1.250,00")
-    col2.metric("Pedidos no Mês", "42")
-    col3.metric("Ticket Médio", "R$ 29,76")
-
-    st.subheader("📈 Vendas da Semana")
-    import pandas as pd
-    dados = {
-        "Dia": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
-        "Vendas (R$)": [120, 150, 90, 180, 200, 240, 210]
-    }
-    df = pd.DataFrame(dados)
-    st.bar_chart(df.set_index("Dia"))
-
-    st.subheader("📋 Últimos Pedidos")
-    st.table(pd.DataFrame({
-        "Cliente": ["Ana", "Carlos", "Beatriz"],
-        "Data": ["20/04", "20/04", "19/04"],
-        "Valor": ["R$ 18,00", "R$ 20,00", "R$ 21,50"]
-    }))
+     
