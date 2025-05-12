@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import urllib.parse
 
 # -----------------------------------
 # DASHBOARD (área do proprietário)
@@ -45,6 +46,7 @@ def exibir_dashboard():
         "Valor": ["R$ 18,00", "R$ 20,00", "R$ 21,50"]
     }))
 
+
 # -----------------------------------
 # CUSTOMIZAÇÃO DA PÁGINA (CSS)
 # -----------------------------------
@@ -58,7 +60,7 @@ st.markdown(
 
         /* Cor da sidebar (lateral onde fica login/senha) */
         section[data-testid="stSidebar"] {
-            background-color: #732C4D;
+            background-color: #FFFFFF;
         }
 
         /* Títulos principais (h1, h2, h3) */
@@ -109,6 +111,16 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ------------------------------
+# LOGO DO SITE E ESPAÇAMENTO
+# ------------------------------
+
+# Imagem no topo da sidebar
+st.sidebar.image("Logo.jpg", width=300)
+
+# Espaço entre a imagem e os campos de login
+st.sidebar.markdown("<div style='margin-bottom: 230px;'></div>", unsafe_allow_html=True)
+
 
 # ------------------------------
 # ÁREA DE LOGIN DO PROPRIETÁRIO
@@ -119,6 +131,9 @@ SENHA_PROPRIETARIO = "1234"  # Trocar por uma senha segura depois
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
+# ------------------------------------
+# FORMULÁRIO DE LOGIN
+# ------------------------------------
 with st.sidebar:
     st.markdown("### 👤 Área do Proprietário")
     if not st.session_state.logado:
@@ -126,8 +141,8 @@ with st.sidebar:
         senha = st.text_input("Senha", type="password")
         if st.button("Entrar"):
             if usuario == USUARIO_PROPRIETARIO and senha == SENHA_PROPRIETARIO:
-                st.success("Login realizado com sucesso!")
                 st.session_state.logado = True
+                st.success("Login realizado com sucesso!")
             else:
                 st.error("Usuário ou senha incorretos.")
     else:
@@ -138,14 +153,14 @@ with st.sidebar:
 # ------------------------------------
 # MOSTRAR DASHBOARD APÓS LOGIN
 # ------------------------------------
-if st.session_state.logado:
-    exibir_dashboard()
-else:
+#if st.session_state.logado:
+ #   exibir_dashboard()
+#else:
+ #   st.info("Faça login para acessar o dashboard.")
 
 # -------------------------------------
 # SISTEMA DE PEDIDOS (visível a todos)
 # -------------------------------------
-
     adicionais_inclusos = [
         "Mousse Ninho", "Mousse Ovomaltine", "Mousse Limão", "Mousse Amendoim", "Mousse Morango", "Uva", "Banana", "Morango", "Kiwi", "Amendoim", "Granola Tradicional",
 "Leite Condensado", "Leite em Pó", "Mel", "Paçoca", "Castanha de Caju", "Cobertura Caramelo", "Cobertura Chocolate", "Cobertura Morango"
@@ -170,7 +185,7 @@ for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionado
 if st.session_state.logado:
     exibir_dashboard()
 else:
-    st.title("Doces Lalumare 🍧")
+    st.title("Monte aqui o seu açaí 🍨")
 
     tamanho_opcao = st.selectbox(
         "Escolha o tamanho do copo:", 
@@ -223,10 +238,22 @@ if erro_limite:
 st.subheader("Dados do cliente")
 nome = st.text_input("Nome completo:")
 whatsapp = st.text_input("WhatsApp (formato: (DDD) 91234-5678):")
-endereco = st.text_input("Endereço para entrega:")
-forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"])
+
+forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"], index=None)
+
+# Campo do troco só aparece se a forma for "Dinheiro"
 troco = st.text_input("Troco para quanto?") if forma_pagamento == "Dinheiro" else ""
-tipo_pedido = st.selectbox("Tipo de pedido:", ["", "Entrega", "Retirada"])
+
+tipo_pedido = st.radio("Tipo:", ["Retirada", "Entrega"], index=None)
+
+# Limpa o campo de endereço quando mudar para "Retirada"
+if tipo_pedido == "Retirada":
+    st.session_state.endereco = ""
+
+# Campo de endereço só aparece se o tipo for "Entrega"
+if tipo_pedido == "Entrega":
+    st.text_input("Endereço para entrega:", key="endereco")
+
 
 # ------------------------------
 # CÁLCULO DO VALOR TOTAL
@@ -242,21 +269,26 @@ st.markdown("## 🧾 Resumo do Pedido")
 resumo_html = f"""
 <div style="background-color: #ffffff; padding: 20px; border-radius: 12px;
      border: 1px solid #ddd; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); margin-top: 10px; color: #000000;">
-    <p><strong>🍧 Tamanho:</strong> {st.session_state.tamanho or 'Não selecionado'}</p>
-    <p><strong>✅ Adicionais Inclusos:</strong> {"<br>".join(st.session_state.adicionais_selecionados) or 'Nenhum'}</p>
+    <p><strong>🍨 Tamanho:</strong> {st.session_state.tamanho or 'Não selecionado'}</p>
+    <p><strong>✔️ Adicionais Inclusos:</strong> {"<br>".join(st.session_state.adicionais_selecionados) or 'Nenhum'}</p>
     <p><strong>➕ Adicionais Extras:</strong> {"<br>".join(st.session_state.adicionais_extras_selecionados) or 'Nenhum'}</p>
+    <br>
     <p><strong>👤 Cliente:</strong> {nome or 'Não informado'}</p>
-    <p><strong>📱 WhatsApp:</strong> {whatsapp or 'Não informado'}</p>
-    <p><strong>📍 Endereço:</strong> {endereco or 'Não informado'}</p>
+    <p><strong>📞 WhatsApp:</strong> {whatsapp or 'Não informado'}</p>
+    <br>
     <p><strong>💳 Pagamento:</strong> {forma_pagamento}</p>
     <p><strong>💰 Troco:</strong> {troco or 'N/A'}</p>
-    <p><strong>🚚 Tipo de Pedido:</strong> {tipo_pedido or 'Não informado'}</p>
+    <p><strong>🛵 Tipo de Pedido:</strong> {tipo_pedido or 'Não informado'}</p>
+    <p><strong>📌 Endereço:</strong> {st.session_state.get("endereco", "Não informado")}</p>
+    <br>
+    <br>
     <p><strong> 🟢 Valor Total: R$ {valor_total:.2f}
 </div>
 """
 
 st.markdown(resumo_html, unsafe_allow_html=True)
 
+endereco = st.session_state.get("endereco", "")
 
 # --------------------------
 # BOTÃO DE CONFIRMAR PEDIDO 
@@ -264,29 +296,66 @@ st.markdown(resumo_html, unsafe_allow_html=True)
 confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
 
 if st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True):
-    if not nome or not endereco or not forma_pagamento:
+    # Endereço só é obrigatório se o tipo for Entrega
+    if not nome or not whatsapp or not forma_pagamento or (tipo_pedido == "Entrega" and not endereco):
         st.error("Por favor, preencha todos os dados do cliente.")
     elif erro_limite:
         st.error("Quantidade de adicionais fora do limite.")
     else:
-        st.success("Pedido confirmado! Em breve o estabelecimento entrará em contato!")
+        adicionais_inclusos = ', '.join(st.session_state.adicionais_selecionados)
+        adicionais_extras_texto = ', '.join(st.session_state.adicionais_extras_selecionados)
+        valor_extras = sum([adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados])
+        valor_total = valor_base + valor_extras
+
+        # Se for retirada, mostra "Cliente irá retirar"
+        endereco_texto = endereco if tipo_pedido == "Entrega" else "Cliente irá retirar no local"
+
+# --------------------------
+# INTEGRAÇÃO COM O WHATSAPP
+# --------------------------
+        mensagem = f"""
+Olá! Novo pedido recebido:
+
+- Nome: {nome}
+- WhatsApp: {whatsapp}
+- Endereço: {endereco_texto}
+- Forma de pagamento: {forma_pagamento}
+
+- Copo: {st.session_state.tamanho}
+- Adicionais inclusos: {adicionais_inclusos}
+- Adicionais extras: {adicionais_extras_texto}
+
+Total: R$ {valor_total:.2f}
+"""
+
+        msg_encoded = urllib.parse.quote(mensagem)
+        numero_proprietario = "5511999998888"
+        link_whatsapp = f"https://wa.me/{numero_proprietario}?text={msg_encoded}"
+
+        st.success("Estamos te redirecionando para o WhatsApp...")
+
+        redirecionamento_html = f"""
+        <meta http-equiv="refresh" content="1;url={link_whatsapp}">
+        <script>
+            window.location.href = "{link_whatsapp}";
+        </script>
+        """
+        st.markdown(redirecionamento_html, unsafe_allow_html=True)
 
 
-# ------------------------------
-# BOTÃO DE LIMPAR CONFIRMAR
-# ------------------------------
+# ----------------
+# BOTÃO DE LIMPAR
+# ----------------
 if st.button("Limpar Pedido"):
     # Limpa as variáveis do estado da sessão
     st.session_state.tamanho = ""
     st.session_state.adicionais_selecionados = []
     st.session_state.adicionais_extras_selecionados = []
     st.session_state.nome = ""
-    st.session_state.endereco = ""
     st.session_state.forma_pagamento = ""
     st.session_state.troco = ""
     st.session_state.tipo_pedido = ""
+    st.session_state.endereco = ""
 
     # Recarrega a aplicação para limpar o estado e os campos da interface
     st.rerun()
-
-     
