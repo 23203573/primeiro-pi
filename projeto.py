@@ -199,54 +199,54 @@ else:
     regras = tamanhos.get(st.session_state.tamanho, {"min": 0, "max": 0, "preco": 0.00})
     min_adicionais, max_adicionais, valor_base = regras["min"], regras["max"], regras["preco"]
 
-adicionais_disabled = st.session_state.tamanho == ""
-if adicionais_disabled:
-    st.warning("Selecione o tamanho do copo antes de adicionar ingredientes.")
+    adicionais_disabled = st.session_state.tamanho == ""
+    if adicionais_disabled:
+        st.warning("Selecione o tamanho do copo antes de adicionar ingredientes.")
 
-st.subheader("Escolha seus adicionais")
+    st.subheader("Escolha seus adicionais")
 
-novos_adicionais_inclusos_formatados = st.multiselect(
+    novos_adicionais_inclusos_formatados = st.multiselect(
     "Adicionais inclusos:", opcoes_inclusos,
     default=st.session_state.adicionais_selecionados,
     disabled=adicionais_disabled
 )
 
-novos_adicionais_extras_formatados = st.multiselect(
-    "Adicionais extras (custo adicional):", opcoes_extras,
-    default=[f"{nome} - R${adicionais_extras[nome]:.2f}" for nome in st.session_state.adicionais_extras_selecionados],
-    disabled=adicionais_disabled
-)
+    novos_adicionais_extras_formatados = st.multiselect(
+        "Adicionais extras (custo adicional):", opcoes_extras,
+        default=[f"{nome} - R${adicionais_extras[nome]:.2f}" for nome in st.session_state.adicionais_extras_selecionados],
+        disabled=adicionais_disabled
+    )
 
-st.session_state.adicionais_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_inclusos_formatados]
-st.session_state.adicionais_extras_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_extras_formatados]
+    st.session_state.adicionais_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_inclusos_formatados]
+    st.session_state.adicionais_extras_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_extras_formatados]
 
-total_adicionais = len(st.session_state.adicionais_selecionados) + len(st.session_state.adicionais_extras_selecionados)
-erro_limite = not (min_adicionais <= total_adicionais <= max_adicionais)
+    total_adicionais = len(st.session_state.adicionais_selecionados) + len(st.session_state.adicionais_extras_selecionados)
+    erro_limite = not (min_adicionais <= total_adicionais <= max_adicionais)
 
-if erro_limite:
-    st.error(f"Você precisa selecionar entre {min_adicionais} e {max_adicionais} adicionais. Selecionados: {total_adicionais}")
+    if erro_limite:
+        st.error(f"Você precisa selecionar entre {min_adicionais} e {max_adicionais} adicionais. Selecionados: {total_adicionais}")
 
 # ------------------------------
 # CAMPOS DO CLIENTE
 # ------------------------------
-st.subheader("Dados do cliente")
-nome = st.text_input("Nome completo:")
-whatsapp = st.text_input("WhatsApp (formato: (DDD) 91234-5678):")
+    st.subheader("Dados do cliente")
+    nome = st.text_input("Nome completo:")
+    whatsapp = st.text_input("WhatsApp (formato: (DDD) 91234-5678):")
 
-forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"], index=None)
+    forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"], index=None)
 
 # Campo do troco só aparece se a forma for "Dinheiro"
-troco = st.text_input("Troco para quanto?") if forma_pagamento == "Dinheiro" else ""
+    troco = st.text_input("Troco para quanto?") if forma_pagamento == "Dinheiro" else ""
 
-tipo_pedido = st.radio("Tipo:", ["Retirada", "Entrega"], index=None)
+    tipo_pedido = st.radio("Tipo:", ["Retirada", "Entrega"], index=None)
 
 # Limpa o campo de endereço quando mudar para "Retirada"
-if tipo_pedido == "Retirada":
-    st.session_state.endereco = ""
+    if tipo_pedido == "Retirada":
+        st.session_state.endereco = ""
 
 # Campo de endereço só aparece se o tipo for "Entrega"
-if tipo_pedido == "Entrega":
-    st.text_input("Endereço para entrega:", key="endereco")
+    if tipo_pedido == "Entrega":
+        st.text_input("Endereço para entrega:", key="endereco")
 
 # ------------------------------
 # CÁLCULO DO VALOR TOTAL
