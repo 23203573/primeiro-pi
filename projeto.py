@@ -117,7 +117,6 @@ st.sidebar.image("Logo.jpg", width=300)
 # Espaço entre a imagem e os campos de login
 st.sidebar.markdown("<div style='margin-bottom: 230px;'></div>", unsafe_allow_html=True)
 
-
 # ------------------------------
 # ÁREA DE LOGIN DO PROPRIETÁRIO
 # ------------------------------
@@ -127,9 +126,6 @@ SENHA_PROPRIETARIO = "1234"  # Trocar por uma senha segura depois
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
-# ------------------------------------
-# FORMULÁRIO DE LOGIN
-# ------------------------------------
 # ------------------------------------
 # FORMULÁRIO DE LOGIN
 # ------------------------------------
@@ -155,14 +151,6 @@ with st.sidebar:
         if st.button("Sair"):
             st.session_state.logado = False
             st.rerun()
-
-# ------------------------------------
-# MOSTRAR DASHBOARD APÓS LOGIN
-# ------------------------------------
-#if st.session_state.logado:
- #   exibir_dashboard()
-#else:
- #   st.info("Faça login para acessar o dashboard.")
 
 # -------------------------------------
 # SISTEMA DE PEDIDOS (visível a todos)
@@ -260,7 +248,6 @@ if tipo_pedido == "Retirada":
 if tipo_pedido == "Entrega":
     st.text_input("Endereço para entrega:", key="endereco")
 
-
 # ------------------------------
 # CÁLCULO DO VALOR TOTAL
 # ------------------------------
@@ -347,7 +334,6 @@ Total: R$ {valor_total:.2f}
         </script>
         """
         st.markdown(redirecionamento_html, unsafe_allow_html=True)
-
 
 # ----------------
 # BOTÃO DE LIMPAR
