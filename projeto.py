@@ -5,7 +5,6 @@ import urllib.parse
 # -----------------------------------
 # DASHBOARD (área do proprietário)
 # -----------------------------------
-
 def exibir_dashboard():
     st.title("📊 Dashboard de Vendas")
     st.markdown("Bem-vindo ao painel de controle da **Doces Lalumare**!")
@@ -24,8 +23,6 @@ def exibir_dashboard():
     st.bar_chart(df.set_index("Dia"))
 
     st.subheader("🥄 Adicionais Mais Pedidos")
-
-    # Simulação de quantidade de pedidos por adicional
     dados_adicionais = {
         "Morango": 28,
         "Leite Condensado": 25,
@@ -45,7 +42,6 @@ def exibir_dashboard():
         "Data": ["20/04", "20/04", "19/04"],
         "Valor": ["R$ 18,00", "R$ 20,00", "R$ 21,50"]
     }))
-
 
 # -----------------------------------
 # CUSTOMIZAÇÃO DA PÁGINA (CSS)
@@ -134,21 +130,31 @@ if "logado" not in st.session_state:
 # ------------------------------------
 # FORMULÁRIO DE LOGIN
 # ------------------------------------
+# ------------------------------------
+# FORMULÁRIO DE LOGIN
+# ------------------------------------
 with st.sidebar:
     st.markdown("### 👤 Área do Proprietário")
+
     if not st.session_state.logado:
         usuario = st.text_input("Usuário")
         senha = st.text_input("Senha", type="password")
-        if st.button("Entrar"):
+
+        entrar = st.button("Entrar")
+
+        if entrar:
             if usuario == USUARIO_PROPRIETARIO and senha == SENHA_PROPRIETARIO:
                 st.session_state.logado = True
                 st.success("Login realizado com sucesso!")
+                st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
+
     else:
         st.success("Você está logado como proprietário.")
         if st.button("Sair"):
             st.session_state.logado = False
+            st.rerun()
 
 # ------------------------------------
 # MOSTRAR DASHBOARD APÓS LOGIN
