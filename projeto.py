@@ -310,18 +310,22 @@ else:
     # INTEGRAÇÃO COM O WHATSAPP
     # --------------------------
             mensagem = f"""
-    Olá! Novo pedido recebido:
+    Oi! Gostaria de fazer um pedido :)
 
+    Meus dados são:
     - Nome: {nome}
     - WhatsApp: {whatsapp}
     - Endereço: {endereco_texto}
     - Forma de pagamento: {forma_pagamento}
 
+    E quero um açaí com:
     - Copo: {st.session_state.tamanho}
     - Adicionais inclusos: {adicionais_inclusos}
     - Adicionais extras: {adicionais_extras_texto}
 
     Total: R$ {valor_total:.2f}
+
+    Obrigado(a)!
     """
 
             msg_encoded = urllib.parse.quote(mensagem)
