@@ -197,7 +197,10 @@ else:
         "500ml - R$20,00": {"min": 3, "max": 6, "preco": 20.00}
     }
     regras = tamanhos.get(st.session_state.tamanho, {"min": 0, "max": 0, "preco": 0.00})
-    min_adicionais, max_adicionais, valor_base = regras["min"], regras["max"], regras["preco"]
+
+    min_adicionais = regras["min"]
+    max_adicionais = regras["max"]
+    valor_base = regras["preco"]
 
     adicionais_disabled = st.session_state.tamanho == ""
     if adicionais_disabled:
@@ -209,7 +212,7 @@ else:
     "Adicionais inclusos:", opcoes_inclusos,
     default=st.session_state.adicionais_selecionados,
     disabled=adicionais_disabled
-)
+    )
 
     novos_adicionais_extras_formatados = st.multiselect(
         "Adicionais extras (custo adicional):", opcoes_extras,
@@ -251,103 +254,103 @@ else:
 # ------------------------------
 # CÁLCULO DO VALOR TOTAL
 # ------------------------------
-valor_extras = sum(adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados)
-valor_total = valor_base + valor_extras
+    valor_extras = sum(adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados)
+    valor_total = valor_base + valor_extras
 
-# ------------------------------
-# RESUMO DO PEDIDO
-# ------------------------------
-st.markdown("## 🧾 Resumo do Pedido")
+    # ------------------------------
+    # RESUMO DO PEDIDO
+    # ------------------------------
+    st.markdown("## 🧾 Resumo do Pedido")
 
-resumo_html = f"""
-<div style="background-color: #ffffff; padding: 20px; border-radius: 12px;
-     border: 1px solid #ddd; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); margin-top: 10px; color: #000000;">
-    <p><strong>🍨 Tamanho:</strong> {st.session_state.tamanho or 'Não selecionado'}</p>
-    <p><strong>✔️ Adicionais Inclusos:</strong> {"<br>".join(st.session_state.adicionais_selecionados) or 'Nenhum'}</p>
-    <p><strong>➕ Adicionais Extras:</strong> {"<br>".join(st.session_state.adicionais_extras_selecionados) or 'Nenhum'}</p>
-    <br>
-    <p><strong>👤 Cliente:</strong> {nome or 'Não informado'}</p>
-    <p><strong>📞 WhatsApp:</strong> {whatsapp or 'Não informado'}</p>
-    <br>
-    <p><strong>💳 Pagamento:</strong> {forma_pagamento}</p>
-    <p><strong>💰 Troco:</strong> {troco or 'N/A'}</p>
-    <p><strong>🛵 Tipo de Pedido:</strong> {tipo_pedido or 'Não informado'}</p>
-    <p><strong>📌 Endereço:</strong> {st.session_state.get("endereco", "Não informado")}</p>
-    <br>
-    <br>
-    <p><strong> 🟢 Valor Total: R$ {valor_total:.2f}
-</div>
-"""
+    resumo_html = f"""
+    <div style="background-color: #ffffff; padding: 20px; border-radius: 12px;
+        border: 1px solid #ddd; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); margin-top: 10px; color: #000000;">
+        <p><strong>🍨 Tamanho:</strong> {st.session_state.tamanho or 'Não selecionado'}</p>
+        <p><strong>✔️ Adicionais Inclusos:</strong> {"<br>".join(st.session_state.adicionais_selecionados) or 'Nenhum'}</p>
+        <p><strong>➕ Adicionais Extras:</strong> {"<br>".join(st.session_state.adicionais_extras_selecionados) or 'Nenhum'}</p>
+        <br>
+        <p><strong>👤 Cliente:</strong> {nome or 'Não informado'}</p>
+        <p><strong>📞 WhatsApp:</strong> {whatsapp or 'Não informado'}</p>
+        <br>
+        <p><strong>💳 Pagamento:</strong> {forma_pagamento}</p>
+        <p><strong>💰 Troco:</strong> {troco or 'N/A'}</p>
+        <p><strong>🛵 Tipo de Pedido:</strong> {tipo_pedido or 'Não informado'}</p>
+        <p><strong>📌 Endereço:</strong> {st.session_state.get("endereco", "Não informado")}</p>
+        <br>
+        <br>
+        <p><strong> 🟢 Valor Total: R$ {valor_total:.2f}
+    </div>
+    """
 
-st.markdown(resumo_html, unsafe_allow_html=True)
+    st.markdown(resumo_html, unsafe_allow_html=True)
 
-endereco = st.session_state.get("endereco", "")
+    endereco = st.session_state.get("endereco", "")
 
-# --------------------------
-# BOTÃO DE CONFIRMAR PEDIDO 
-# --------------------------
-confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
+    # --------------------------
+    # BOTÃO DE CONFIRMAR PEDIDO 
+    # --------------------------
+    confirmar_button_disabled = erro_limite or st.session_state.tamanho == ""
 
-if st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True):
-    # Endereço só é obrigatório se o tipo for Entrega
-    if not nome or not whatsapp or not forma_pagamento or (tipo_pedido == "Entrega" and not endereco):
-        st.error("Por favor, preencha todos os dados do cliente.")
-    elif erro_limite:
-        st.error("Quantidade de adicionais fora do limite.")
-    else:
-        adicionais_inclusos = ', '.join(st.session_state.adicionais_selecionados)
-        adicionais_extras_texto = ', '.join(st.session_state.adicionais_extras_selecionados)
-        valor_extras = sum([adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados])
-        valor_total = valor_base + valor_extras
+    if st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True):
+        # Endereço só é obrigatório se o tipo for Entrega
+        if not nome or not whatsapp or not forma_pagamento or (tipo_pedido == "Entrega" and not endereco):
+            st.error("Por favor, preencha todos os dados do cliente.")
+        elif erro_limite:
+            st.error("Quantidade de adicionais fora do limite.")
+        else:
+            adicionais_inclusos = ', '.join(st.session_state.adicionais_selecionados)
+            adicionais_extras_texto = ', '.join(st.session_state.adicionais_extras_selecionados)
+            valor_extras = sum([adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados])
+            valor_total = valor_base + valor_extras
 
-        # Se for retirada, mostra "Cliente irá retirar"
-        endereco_texto = endereco if tipo_pedido == "Entrega" else "Cliente irá retirar no local"
+            # Se for retirada, mostra "Cliente irá retirar"
+            endereco_texto = endereco if tipo_pedido == "Entrega" else "Cliente irá retirar no local"
 
-# --------------------------
-# INTEGRAÇÃO COM O WHATSAPP
-# --------------------------
-        mensagem = f"""
-Olá! Novo pedido recebido:
+    # --------------------------
+    # INTEGRAÇÃO COM O WHATSAPP
+    # --------------------------
+            mensagem = f"""
+    Olá! Novo pedido recebido:
 
-- Nome: {nome}
-- WhatsApp: {whatsapp}
-- Endereço: {endereco_texto}
-- Forma de pagamento: {forma_pagamento}
+    - Nome: {nome}
+    - WhatsApp: {whatsapp}
+    - Endereço: {endereco_texto}
+    - Forma de pagamento: {forma_pagamento}
 
-- Copo: {st.session_state.tamanho}
-- Adicionais inclusos: {adicionais_inclusos}
-- Adicionais extras: {adicionais_extras_texto}
+    - Copo: {st.session_state.tamanho}
+    - Adicionais inclusos: {adicionais_inclusos}
+    - Adicionais extras: {adicionais_extras_texto}
 
-Total: R$ {valor_total:.2f}
-"""
+    Total: R$ {valor_total:.2f}
+    """
 
-        msg_encoded = urllib.parse.quote(mensagem)
-        numero_proprietario = "5511999998888"
-        link_whatsapp = f"https://wa.me/{numero_proprietario}?text={msg_encoded}"
+            msg_encoded = urllib.parse.quote(mensagem)
+            numero_proprietario = "5511999998888"
+            link_whatsapp = f"https://wa.me/{numero_proprietario}?text={msg_encoded}"
 
-        st.success("Estamos te redirecionando para o WhatsApp...")
+            st.success("Estamos te redirecionando para o WhatsApp...")
 
-        redirecionamento_html = f"""
-        <meta http-equiv="refresh" content="1;url={link_whatsapp}">
-        <script>
-            window.location.href = "{link_whatsapp}";
-        </script>
-        """
-        st.markdown(redirecionamento_html, unsafe_allow_html=True)
+            redirecionamento_html = f"""
+            <meta http-equiv="refresh" content="1;url={link_whatsapp}">
+            <script>
+                window.location.href = "{link_whatsapp}";
+            </script>
+            """
+            st.markdown(redirecionamento_html, unsafe_allow_html=True)
 
-# ----------------
-# BOTÃO DE LIMPAR
-# ----------------
-if st.button("Limpar Pedido"):
-    # Limpa as variáveis do estado da sessão
-    st.session_state.tamanho = ""
-    st.session_state.adicionais_selecionados = []
-    st.session_state.adicionais_extras_selecionados = []
-    st.session_state.nome = ""
-    st.session_state.forma_pagamento = ""
-    st.session_state.troco = ""
-    st.session_state.tipo_pedido = ""
-    st.session_state.endereco = ""
+    # ----------------
+    # BOTÃO DE LIMPAR
+    # ----------------
+    if st.button("Limpar Pedido"):
+        # Limpa as variáveis do estado da sessão
+        st.session_state.tamanho = ""
+        st.session_state.adicionais_selecionados = []
+        st.session_state.adicionais_extras_selecionados = []
+        st.session_state.nome = ""
+        st.session_state.forma_pagamento = ""
+        st.session_state.troco = ""
+        st.session_state.tipo_pedido = ""
+        st.session_state.endereco = ""
 
-    # Recarrega a aplicação para limpar o estado e os campos da interface
-    st.rerun()
+        # Recarrega a aplicação para limpar o estado e os campos da interface
+        st.rerun()
