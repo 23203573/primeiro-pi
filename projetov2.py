@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
-from banco import inserir_cliente, inserir_pedido, inserir_produto
+from banco import inserir_cliente, inserir_pedido, inserir_produto, get_existing_cliente
 from datetime import datetime
 
 # -----------------------------------
@@ -173,9 +173,16 @@ if not st.session_state.logado:
             st.error("Preencha todos os campos obrigatórios.")
         else:
             try:
-                cpf = '000.000.000-00'
-                cliente_id = inserir_cliente(cpf, nome, whatsapp, endereco)
-                pedido_id = inserir_pedido(cliente_id, 1, f"PD{datetime.now().strftime('%Y%m%d%H%M%S')}", valor_total, "Recebido", forma_pagamento, tipo_pedido, datetime.now(), 1)
+                cliente_id = get_existing_cliente(nome, whatsapp)
+
+                if cliente_id is None:
+                    cliente_id = inserir_cliente(nome, whatsapp, endereco)
+
+                pedido_id = inserir_pedido(cliente_id=cliente_id, funcionario_id=1, 
+                                           numero=f"PD{datetime.now().strftime('%Y%m%d%H%M%S')}", valor=valor_total, status="Recebido", 
+                                           forma_pagamento=forma_pagamento, forma_retirada=tipo_pedido, data_hora_previsao=datetime.now(), 
+                                           soma_qtd_produto=1)
+                
                 inserir_produto(pedido_id, "Açaí", 1, valor_total, "un")
             except Exception as e:
                 st.error(f"Erro ao salvar pedido: {e}")

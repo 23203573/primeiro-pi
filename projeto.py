@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+from banco import *
+from datetime import datetime
 
 # -----------------------------------
 # Variáveis Globais
@@ -16,38 +18,133 @@ def exibir_dashboard():
     st.title("📊 Dashboard de Vendas")
     st.markdown("Bem-vindo ao painel de controle da **Doces Lalumare**!")
 
+    pedidos = get_all_pedidos()
+    total_vendas = float(0)
+    total_pedidos = len(pedidos)
+
+    vendas_seg = 0
+    vendas_ter = 0
+    vendas_qua = 0
+    vendas_qui = 0
+    vendas_sex = 0
+    vendas_sab = 0
+    vendas_dom = 0
+
+    if not pedidos:
+        total_vendas = 0
+        total_pedidos = 0
+        media = 0
+    else:
+        for pedido in pedidos:
+            total_vendas += float(pedido[0])
+            dt = pedido[3]
+            int_weekday = dt.weekday()
+
+            if int_weekday == 0:
+                vendas_seg += 1
+            elif int_weekday == 1:
+                vendas_ter += 1
+            elif int_weekday == 2:
+                vendas_qua += 1
+            elif int_weekday == 3:
+                vendas_qui += 1
+            elif int_weekday == 4:
+                vendas_sex += 1
+            elif int_weekday == 5:
+                vendas_sab += 1
+            elif int_weekday == 6:
+                vendas_dom += 1
+
+        media = float(total_vendas / total_pedidos)
+
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total de Vendas", "R$ 1.250,00")
-    col2.metric("Pedidos no Mês", "42")
-    col3.metric("Ticket Médio", "R$ 29,76")
+    col1.metric(f"Total de Vendas", f"R$ {total_vendas:.2f}")
+    col2.metric(f"Pedidos no Mês", f"{total_pedidos}")
+    col3.metric(f"Ticket Médio", f"R$ {media:.2f}")
 
     st.subheader("📈 Vendas da Semana")
     dados = {
-        "Dia": ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
-        "Vendas (R$)": [120, 150, 90, 180, 200, 240, 210]
+        "Dia": ["1- Seg", "2- Ter", "3- Qua", "4- Qui", "5- Sex", "6- Sáb", "7- Dom"],
+        "Vendas (R$)": [vendas_seg, vendas_ter, vendas_qua, vendas_qui, vendas_sex, vendas_sab, vendas_dom]
     }
     df = pd.DataFrame(dados)
     st.bar_chart(df.set_index("Dia"))
 
+    statistics = get_statistics_adicionais()
+
+    all_numbers = []
+    for item_tuple in statistics:
+        # Each tuple contains one string at index 0
+        numbers_string = item_tuple[0]
+
+        # Split the string by comma and space, and clean up any extra whitespace
+        # Using .strip() ensures ' 18' becomes '18'
+        individual_numbers = [num.strip() for num in numbers_string.split(',')]
+
+        # Add these numbers to our collective list
+        all_numbers.extend(individual_numbers)
+
+    prd_statistics = {}
+
+    for n in all_numbers:
+        produto = get_produto(n)
+        if produto in prd_statistics:
+            prd_statistics[produto] += 1
+        else:
+            prd_statistics[produto] = 1
+        
+
     st.subheader("🥄 Adicionais Mais Pedidos")
-    dados_adicionais = {
-        "Morango": 28,
-        "Leite Condensado": 25,
-        "Granola Tradicional": 18,
-        "Mousse Ninho": 32,
-        "Paçoca": 20,
-        "Kit Kat": 15,
-        "Bis": 12,
-        "Trento": 10
-    }
+    dados_adicionais = prd_statistics
+
     df_adicionais = pd.DataFrame(list(dados_adicionais.items()), columns=["Adicional", "Quantidade de Pedidos"])
     st.bar_chart(df_adicionais.set_index("Adicional"))
 
+    last_orders = get_last_10_pedidos()
+
+    cliente = []
+    data = []
+    valor = []
+    adicionais_lst = []
+
+    for order in last_orders:
+        cliente.append(str(order[0]))
+        valor.append(f"{float(order[1]):.2f}")
+        data.append(str(order[2].strftime('%d-%m-%Y %H:%M:%S')))
+        
+        add_str = ''
+        for add in order[3].split(', '):
+            prd = get_produto(add)
+            add_str += f"{prd}, "
+        adicionais_lst.append(add_str)
+
     st.subheader("📋 Últimos Pedidos")
-    st.table(pd.DataFrame({
-        "Cliente": ["Ana", "Carlos", "Beatriz"],
-        "Data": ["20/04", "20/04", "19/04"],
-        "Valor": ["R$ 18,00", "R$ 20,00", "R$ 21,50"]
+    st.dataframe(pd.DataFrame({
+        "Cliente": cliente,
+        "Data": data,
+        "Valor": valor,
+        "Adicionais": adicionais_lst
+    }))
+
+    estoque = get_produto_status()
+
+    produtos = []
+    quantidades = []
+    valores = []
+    medidas = []
+
+    for prd in estoque:
+        produtos.append(str(prd[0]))
+        quantidades.append(str(prd[1]))
+        valores.append(str(prd[2]))
+        medidas.append(f"{str(prd[4])}{str(prd[3])}")
+
+    st.subheader("📦 Produtos em Estoque")
+    st.dataframe(pd.DataFrame({
+        "Produto": produtos,
+        "Quantidade disponível": quantidades,
+        "Valor no pedido": valores,
+        "Porção por Pedido": medidas
     }))
 
 # -----------------------------------
@@ -208,15 +305,19 @@ if st.session_state.logado:
 else:
     st.title("Monte aqui o seu açaí 🍨")
 
-    adicionais_inclusos = [
-        "Mousse Ninho", "Mousse Ovomaltine", "Mousse Limão", "Mousse Amendoim", "Mousse Morango", "Uva", "Banana", "Morango", "Kiwi", "Amendoim", "Granola Tradicional",
-        "Leite Condensado", "Leite em Pó", "Mel", "Paçoca", "Castanha de Caju", "Cobertura Caramelo", "Cobertura Chocolate", "Cobertura Morango"
-    ]
+    inclusos = get_adicionais()
+    add = []
+    for a in inclusos:
+        add.append(str(a[0]))
 
-    adicionais_extras = {
-        "Bis": 2.00, "Kit Kat": 2.50, "Confete": 2.00,
-        "Nescau Ball": 2.00, "Trento": 2.50
-    }
+    extras = get_extras()
+    ext = {}
+    for e in extras:
+        ext[e[0]] = float(e[1])
+
+    adicionais_inclusos = add
+
+    adicionais_extras = ext
 
     tamanhos_select = ["", "300ml - R$18,00", "500ml - R$20,00"]
 
@@ -368,6 +469,30 @@ else:
 
             # Se for retirada, mostra "Cliente irá retirar"
             endereco_texto = endereco if tipo_pedido == "Entrega" else "Cliente irá retirar no local"
+
+            try:
+                cliente_id = get_existing_cliente(nome=nome, telefone=whatsapp)
+
+                if cliente_id is None:
+                    cliente_id = inserir_cliente(nome=nome, telefone=whatsapp, endereco=endereco)
+
+                adicionais = get_id_produtos(st.session_state.adicionais_selecionados)
+
+                if st.session_state.adicionais_extras_selecionados:
+                    adicionais += get_id_produtos(st.session_state.adicionais_extras_selecionados)
+
+                pedido_id = inserir_pedido(cliente_id=cliente_id, funcionario_id=1, 
+                                            numero=f"PD{datetime.now().strftime('%Y%m%d%H%M%S')}", valor=valor_total, status="Recebido", 
+                                            forma_pagamento=forma_pagamento, forma_retirada=tipo_pedido, data_hora_previsao=datetime.now(), 
+                                            soma_qtd_produto=1, adicionais=', '.join([item[0] for item in adicionais]))
+                
+                for prd in adicionais:
+                    update_qtd_produto(prd[0])
+
+
+            except Exception as e:
+                st.error(f"Erro ao salvar pedido: {e}")
+                st.stop()
 
     # --------------------------
     # INTEGRAÇÃO COM O WHATSAPP
