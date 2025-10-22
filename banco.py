@@ -222,3 +222,91 @@ def get_produto(id_produto):
         return result[0][0]
     except Exception as e:
         raise e
+
+
+def get_all_produtos():
+    """Retorna todos os produtos com seus ids e informações.
+
+    Retorno: lista de tuplas (id_produto, tipo_produto, qtd_produto, valor_produto, un_medida_produto)
+    """
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        sql = "SELECT id_produto, tipo_produto, qtd_produto, valor_produto, un_medida_produto FROM produto;"
+        cursor.execute(sql)
+        result = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return result
+    except Exception as e:
+        raise e
+
+
+def adicionar_produto(tipo_produto: str, qtd_produto: int, valor_produto: float, un_medida_produto: str, qtd_pedido: int) -> str:
+    """Adiciona um novo produto ao estoque e retorna o id (GUID).
+
+    Observação: a coluna `id_pedido` é preenchida com NULL para produtos
+    que representam estoque (não vinculados a um pedido).
+    """
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        sql = """
+            INSERT INTO produto (id_produto, tipo_produto, qtd_produto, valor_produto, un_medida_produto, qtd_pedido)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        guid = str(uuid.uuid4())
+        cursor.execute(sql, (guid, tipo_produto, int(qtd_produto), float(valor_produto), un_medida_produto, qtd_pedido))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return guid
+    except Exception as e:
+        raise e
+
+
+def aumentar_estoque_por_tipo(tipo_produto: str, quantidade: int) -> None:
+    """Incrementa a quantidade em estoque de todos os produtos que correspondem ao tipo fornecido."""
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        sql = "UPDATE produto SET qtd_produto = qtd_produto + %s WHERE tipo_produto = %s;"
+        cursor.execute(sql, (int(quantidade), tipo_produto))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        raise e
+
+
+def aumentar_estoque_por_id(id_produto: str, quantidade: int) -> None:
+    """Incrementa a quantidade em estoque para um produto identificado por `id_produto`."""
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        sql = "UPDATE produto SET qtd_produto = qtd_produto + %s WHERE id_produto = %s;"
+        cursor.execute(sql, (int(quantidade), id_produto))
+        conn.commit()
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        raise e
+
+
+def remover_produto_por_tipo(tipo_produto: str) -> int:
+    """Remove todos os registros de produto cujo tipo corresponda a `tipo_produto`.
+
+    Retorna o número de linhas afetadas.
+    """
+    try:
+        conn = conectar()
+        cursor = conn.cursor()
+        sql = "DELETE FROM produto WHERE tipo_produto = %s;"
+        cursor.execute(sql, (tipo_produto,))
+        affected = cursor.rowcount
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return affected
+    except Exception as e:
+        raise e

@@ -5,11 +5,191 @@ from banco import *
 from datetime import datetime
 
 # -----------------------------------
+# LÓGICA DO ZOOM (ACESSIBILIDADE)
+# -----------------------------------
+# Tamanho da fonte normal e do zoom
+FONT_NORMAL = 18    # Tamanho base em pixels
+FONT_ZOOM = 28      # Aumento de 2 unidades (pixels)
+
+if 'font_size' not in st.session_state:
+    st.session_state['font_size'] = FONT_NORMAL
+if 'zoom_status' not in st.session_state:
+    st.session_state['zoom_status'] = 'normal' # pode ser 'normal', 'aumentado', ou 'diminuido'
+
+def aumentar_fonte():
+    """Aumenta a fonte uma única vez."""
+    if st.session_state['zoom_status'] == 'normal':
+        st.session_state['font_size'] = FONT_ZOOM
+        st.session_state['zoom_status'] = 'aumentado'
+    elif st.session_state['zoom_status'] == 'diminuido':
+        st.session_state['font_size'] = FONT_NORMAL
+        st.session_state['zoom_status'] = 'normal'
+
+def diminuir_fonte():
+    """Diminui a fonte uma única vez."""
+    if st.session_state['zoom_status'] == 'normal':
+        st.session_state['font_size'] = FONT_NORMAL - 6 # 14px
+        st.session_state['zoom_status'] = 'diminuido'
+    elif st.session_state['zoom_status'] == 'aumentado':
+        st.session_state['font_size'] = FONT_NORMAL
+        st.session_state['zoom_status'] = 'normal'
+
+# -----------------------------------
 # Variáveis Globais
 # -----------------------------------
 USUARIO_PROPRIETARIO = "admin"
-SENHA_PROPRIETARIO = "1234"  # Trocar por uma senha segura depois
+SENHA_PROPRIETARIO = "1234" # Trocar por uma senha segura depois
 NUMERO_TELEFONE = "5519998661470"
+
+# -----------------------------------
+# CUSTOMIZAÇÃO DA PÁGINA (CSS)
+# -----------------------------------
+CURRENT_FONT_SIZE = st.session_state['font_size']
+
+# Variáveis de cor removidas, valores codificados diretamente no CSS
+
+st.markdown(
+    f"""
+    <style>
+        /* CSS que força o tamanho da fonte (em Pixels) em vários seletores importantes */
+        
+        /* Contêiner raiz principal, sidebar e seus conteúdos */
+        [data-testid="stAppViewBlock"],
+        [data-testid="stSidebar"],
+        [data-testid="stSidebarContent"],
+
+        /* TODOS os elementos de texto básicos */
+        h1, h2, h3, h4, h5, h6, p, div, span, label, textarea, input, select, option, button, a {{
+            font-size: {CURRENT_FONT_SIZE}px !important;
+            /* Cor escura dos títulos e texto normal */
+            color: #732C4D !important; 
+        }}
+        
+        /* --------------------------------- */
+        /* Cores da Aplicação (Rosa Claro/Branco) */
+        /* --------------------------------- */
+        
+        /* Fundo geral do app (Rosa claro) */
+        .stApp {{
+            background-color: #F2BBC5 !important;
+        }}
+
+        /* Cor da sidebar (Branco) */
+        section[data-testid="stSidebar"] {{
+            background-color: #FFFFFF !important;
+        }}
+        
+        /* Títulos principais (h1, h2, h3 - Cor de destaque) */
+        h1, h2, h3 {{
+            color: #732C4D !important;
+            /* Corrigir o tamanho para os títulos serem maiores, mas baseados na nova fonte */
+            font-size: {CURRENT_FONT_SIZE + 8}px !important;
+        }}
+        h2 {{ font-size: {CURRENT_FONT_SIZE + 4}px !important; }}
+        h3 {{ font-size: {CURRENT_FONT_SIZE + 2}px !important; }}
+        
+        
+        /* --------------------------------- */
+        /* SOLUÇÃO AGRESSIVA FINAL PARA CORES DE LISTAS SUSPENSAS (POPOVER) */
+        /* --------------------------------- */
+        
+        /* Fundo do Menu Dropdown (o pop-up que abre) */
+        div[data-baseweb="popover"] {{
+            background-color: #732C4D !important; /* Fundo escuro */
+        }}
+        
+        /* Força a cor de TODOS os textos, spans e divs dentro do pop-up para BRANCO */
+        div[data-baseweb="popover"] * {{
+            color: white !important;
+        }}
+        
+        /* Cor de fundo da opção ao ser selecionada/hover (para melhor UX) */
+        div[data-baseweb="popover"] div[role="option"]:hover {{
+            background-color: #4c122d !important; /* Fundo ainda mais escuro no hover */
+        }}
+        
+        /* --- Cor do texto DENTRO da caixa de seleção (o valor que está selecionado) --- */
+        [data-testid="stSelectbox"] div[data-baseweb="select"] div,
+        [data-testid="stMultiSelect"] div[data-baseweb="select"] div {{
+            color: white !important;
+        }}
+        
+        /* Cor do ícone da seta no selectbox */
+        [data-testid="stSelectbox"] svg,
+        [data-testid="stMultiSelect"] svg {{
+            fill: white !important;
+        }}
+        
+        /* Rótulos dos inputs (mantendo a cor original do tema) */
+        .stTextInput label,
+        .stSelectbox label,
+        .stRadio label,
+        .stMultiselect label {{
+            color: #732C4D !important;
+        }}
+        
+        /* --------------------------------- */
+        /* CORREÇÃO APRIMORADA DO CHIP/TAG DE SELEÇÃO NO MULTISELECT */
+        /* --------------------------------- */
+        
+        /* Cor de fundo da PÍLULA/TAG selecionada (usamos o BaseUI Tag) */
+        div[data-testid="stMultiSelect"] div[data-baseweb="tag"] {{
+            background-color: white !important; /* Fundo branco */
+            border: 1px solid #732C4D !important; /* Adiciona uma borda para delimitar */
+        }}
+
+        /* Cor do texto dentro da PÍLULA/TAG (garantindo o texto na cor principal) */
+        div[data-testid="stMultiSelect"] div[data-baseweb="tag"] span {{
+            color: #732C4D !important; /* Cor principal dos seus textos */
+        }}
+        
+        /* Cor do ícone de remover (o 'x') dentro da PÍLULA/TAG */
+        div[data-testid="stMultiSelect"] div[data-baseweb="tag"] svg {{
+            fill: #732C4D !important; /* Cor principal para o 'x' */
+        }}
+        
+        /* --------------------------------- */
+        /* ESTILOS DE BOTÕES E ACESSIBILIDADE */
+        /* --------------------------------- */
+
+        /* Botões nativos (Cor de destaque) */
+        button[kind="primary"], button[kind="secondary"],
+        /* Os botões de zoom nativos do Streamlit */
+        div[data-testid="stVerticalBlock"] button {{
+            background-color: #4c122d !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 8px !important;
+        }}
+        
+        /* Garante que o texto interno dos botões também fique branco */
+        button[kind="primary"] *, button[kind="secondary"] *,
+        div[data-testid="stVerticalBlock"] button * {{
+            color: white !important;
+            /* Remove a herança de font-size dos botões de zoom para que fiquem no tamanho normal */
+            font-size: {FONT_NORMAL}px !important;
+        }}
+
+        /* --------------------------------- */
+        /* CSS para o BOTAO de Acessibilidade na Sidebar (Apenas layout do container) */
+        /* --------------------------------- */
+        .sidebar-accessibility-buttons {{
+              display: flex;
+              justify-content: space-between;
+              margin-top: 10px;
+              margin-bottom: 20px;
+        }}
+        
+        /* Ajustar a largura do st.columns na sidebar */
+        [data-testid="stSidebarContent"] [data-testid="column"] {{
+            width: 100% !important;
+            flex: 1 1 0% !important;
+        }}
+        
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # -----------------------------------
 # DASHBOARD (área do proprietário)
@@ -78,7 +258,6 @@ def exibir_dashboard():
         numbers_string = item_tuple[0]
 
         # Split the string by comma and space, and clean up any extra whitespace
-        # Using .strip() ensures ' 18' becomes '18'
         individual_numbers = [num.strip() for num in numbers_string.split(',')]
 
         # Add these numbers to our collective list
@@ -147,79 +326,135 @@ def exibir_dashboard():
         "Porção por Pedido": medidas
     }))
 
-# -----------------------------------
-# CUSTOMIZAÇÃO DA PÁGINA (CSS)
-# -----------------------------------
-st.markdown(
-    """
-    <style>
-        /* Fundo geral do app */
-        .stApp {
-            background-color: #F2BBC5;
-        }
+    st.subheader("🔧 Administração de Produtos")
 
-        /* Cor da sidebar (lateral onde fica login/senha) */
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF;
-        }
+    with st.expander("Adicionar novo produto"):
+        novo_tipo = st.text_input("Nome do produto (tipo)")
+        nova_qtd = st.number_input("Quantidade inicial", min_value=0, value=1, step=1)
+        novo_valor = st.number_input("Valor (R$)", min_value=0.0, value=0.0, step=0.5, format="%.2f")
+        nova_un = st.text_input("Unidade de medida", value="un")
+        nova_qtd_pedido = st.number_input("Quantidade no pedido", min_value=0, value=0, step=1)
 
-        /* Títulos principais (h1, h2, h3) */
-        h1, h2, h3 {
-            color: #732C4D !important;
-        }
+        if st.button("Adicionar produto"):
+            try:
+                new_id = adicionar_produto(novo_tipo, nova_qtd, novo_valor, nova_un, nova_qtd_pedido)
+                st.success(f"Produto '{novo_tipo}' adicionado com id {new_id}")
+                # Manter usuário logado e recarregar a página para atualizar tabelas/estados
+                st.session_state.logado = True
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao adicionar produto: {e}")
 
-        /* Título "Área do Usuário" */
-        .stSidebar .css-1lsbznw {
-            color: #ffffff;
-        }
+    with st.expander("Aumentar estoque existente"):
+        # Carregar todos os produtos e montar um dropdown de tipos únicos
+        produtos_lista = get_all_produtos()
+        tipos = []
+        for p in produtos_lista:
+            tipo = p[1]
+            if tipo not in tipos:
+                tipos.append(tipo)
 
-        /* Labels dos inputs ("Usuário", "Senha", etc) */
-        .stTextInput label,
-        .stSelectbox label,
-        .stRadio label,
-        .stMultiselect label {
-            color: #ffffff;
-        }
+        if not tipos:
+            st.info("Não há produtos cadastrados para aumentar o estoque.")
+        else:
+            tipo_sel = st.selectbox("Tipo do produto:", options=tipos)
+            qtd_aumentar = st.number_input("Quantidade a adicionar", min_value=1, value=1, step=1, key="inc_tipo")
+            if st.button("Aumentar estoque"):
+                try:
+                    aumentar_estoque_por_tipo(tipo_sel, qtd_aumentar)
+                    st.success(f"Estoque de '{tipo_sel}' aumentado em {qtd_aumentar}")
+                    # Manter usuário logado e recarregar a página para atualizar tabelas/estados
+                    st.session_state.logado = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao aumentar estoque por tipo: {e}")
 
-        /* Ajusta cor de parágrafos e texto em geral */
-        p, label, .stRadio > div {
-            color: #732C4D !important;
-        }
+            # Mostrar a tabela de produtos para referência
+            st.markdown("---")
+            st.markdown("**Produtos atuais**")
+            df_prod = pd.DataFrame(produtos_lista, columns=["id_produto", "tipo_produto", "qtd_produto", "valor_produto", "un_medida_produto"]) if produtos_lista else pd.DataFrame(columns=["id_produto", "tipo_produto", "qtd_produto", "valor_produto", "un_medida_produto"]) 
+            st.dataframe(df_prod)
 
-        /* Área do usuário e texto branco */
-        .stTextInput input,
-        .stSelectbox select,
-        .stRadio label,
-        .stMultiselect div {
-            color: white !important;
-        }
+    with st.expander("Remover produto"):
+        # Usar os mesmos tipos já obtidos
+        produtos_lista_remove = get_all_produtos()
+        tipos_remove = []
+        for p in produtos_lista_remove:
+            tipo = p[1]
+            if tipo not in tipos_remove:
+                tipos_remove.append(tipo)
 
-        /* Botões personalizados */
-        button[kind="primary"], button[kind="secondary"] {
-            background-color: #4c122d !important;
-            color: white !important;
-            border: none;
-            border-radius: 8px;
-        }
+        if not tipos_remove:
+            st.info("Não há produtos cadastrados para remover.")
+        else:
+            tipo_remove = st.selectbox("Tipo do produto para remover:", options=tipos_remove, key="remove_tipo")
+            if st.button("Remover produto"):
+                try:
+                    from banco import remover_produto_por_tipo
 
-        /* Garante que o texto interno dos botões também fique branco */
-        button[kind="primary"] *, button[kind="secondary"] * {
-            color: white !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+                    affected = remover_produto_por_tipo(tipo_remove)
+                    st.success(f"Removidos {affected} item(ns) do tipo '{tipo_remove}'")
+                    # Manter logado e recarregar para atualizar a lista
+                    st.session_state.logado = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao remover produto: {e}")
 
 # ------------------------------
-# LOGO DO SITE E ESPAÇAMENTO
+# LOGO DO SITE E ACESSIBILIDADE NA SIDEBAR
 # ------------------------------
 
-# Imagem no topo da sidebar
-st.sidebar.image("Logo.jpg", width=300)
+with st.sidebar:
+    
+    # 1. IMAGEM DO LOGO (TOPO)
+    st.image("Logo.jpg", width=300)
 
-# Espaço entre a imagem e os campos de login
-st.sidebar.markdown("<div style='margin-bottom: 230px;'></div>", unsafe_allow_html=True)
+    st.markdown("---") # Linha separadora
+    
+    # 2. BOTÕES DE ACESSIBILIDADE (ZOOM)
+    
+    st.markdown("### Acessibilidade")
+
+    # Este markdown cria o div para que os botões tenham espaço/estilo
+    st.markdown(
+        """
+        <div class="sidebar-accessibility-buttons">
+        """
+        , unsafe_allow_html=True
+    )
+    
+    # Criando os botões Streamlit nativos em colunas
+    col_a_minus, col_a_plus = st.columns(2)
+
+    with col_a_minus:
+        st.button(
+            "A-", 
+            on_click=diminuir_fonte, 
+            key="btn_zoom_out",
+            use_container_width=True
+        )
+
+    with col_a_plus:
+        st.button(
+            "A+", 
+            on_click=aumentar_fonte, 
+            key="btn_zoom_in",
+            use_container_width=True
+        )
+    
+    st.markdown(
+        """
+        </div>
+        """, unsafe_allow_html=True
+    )
+    
+    # Remover o botão de Alto Contraste (não utilizado)
+
+    # Espaço antes da área de login
+    st.markdown("---")
+    # ------------------------------
+    # FIM DA INJEÇÃO DOS BOTÕES E LOGO NA SIDEBAR
+    # ------------------------------
 
 # ------------------------------
 # ÁREA DE LOGIN DO PROPRIETÁRIO
@@ -257,44 +492,43 @@ with st.sidebar:
 # SISTEMA DE PEDIDOS (visível a todos)
 # -------------------------------------
 
-    # Inicialização do estado da sessão
+# Inicialização do estado da sessão
+# O item 'tamanho' não é usado aqui, mas 'tamanho_select' é usado na interface, mantendo por segurança.
 for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionados"]:
     if key not in st.session_state:
         st.session_state[key] = "" if key == "tamanho" else []
 
-if "tamanho_select" not in st.session_state:
-    st.session_state.tamanho_select = ""
-if "adicionais_selecionados" not in st.session_state:
-    st.session_state.adicionais_selecionados = []
-if "adicionais_extras_selecionados" not in st.session_state:
-    st.session_state.adicionais_extras_selecionados = []
-if "nome_input" not in st.session_state:
-    st.session_state.nome_input = ""
-if "forma_pagamento" not in st.session_state:
-    st.session_state.forma_pagamento = None
-if "forma_pagamento_radio" not in st.session_state:
-    st.session_state.forma_pagamento_radio = None
-if "troco_input" not in st.session_state:
-    st.session_state.troco_input = ""
-if "tipo_pedido_radio" not in st.session_state:
-    st.session_state.tipo_pedido_radio = None
-if "endereco_input" not in st.session_state:
-    st.session_state.endereco_input = ""
+if "carrinho" not in st.session_state:
+    st.session_state.carrinho = []
+
+# As chaves de session state para inputs são necessárias
+for key in ["nome_input", "whatsapp_input", "forma_pagamento_radio", "troco_input", "tipo_pedido_radio", "endereco_input"]:
+     if key not in st.session_state:
+        st.session_state[key] = "" if 'input' in key else None
+
 if "limpar_pedido_solicitado" not in st.session_state:
     st.session_state.limpar_pedido_solicitado = False
+if "limpar_carrinho_solicitado" not in st.session_state:
+    st.session_state.limpar_carrinho_solicitado = False
 
-# Verifica se a limpeza foi solicitada e realiza a limpeza antes de renderizar os widgets
+# Verifica se a limpeza do pedido individual foi solicitada
 if st.session_state.limpar_pedido_solicitado:
     st.session_state.tamanho_select = ""
     st.session_state.adicionais_inclusos_multiselect = []
     st.session_state.adicionais_extras_multiselect = []
+    st.session_state.limpar_pedido_solicitado = False
+    st.rerun()
+
+# Limpar carrinho completo
+if st.session_state.limpar_carrinho_solicitado:
+    st.session_state.carrinho = []
     st.session_state.nome_input = ""
     st.session_state.whatsapp_input = ""
     st.session_state.forma_pagamento_radio = None
     st.session_state.troco_input = ""
     st.session_state.tipo_pedido_radio = None
     st.session_state.endereco_input = ""
-    st.session_state.limpar_pedido_solicitado = False
+    st.session_state.limpar_carrinho_solicitado = False
     st.rerun()
 
 # ------------------------------
@@ -303,8 +537,7 @@ if st.session_state.limpar_pedido_solicitado:
 if st.session_state.logado:
     exibir_dashboard()
 else:
-    st.title("Monte aqui o seu açaí 🍨")
-
+    # Mapeamento de adicionais e extras do 'banco'
     inclusos = get_adicionais()
     add = []
     for a in inclusos:
@@ -316,203 +549,194 @@ else:
         ext[e[0]] = float(e[1])
 
     adicionais_inclusos = add
-
     adicionais_extras = ext
-
     tamanhos_select = ["", "300ml - R$18,00", "500ml - R$20,00"]
 
     opcoes_inclusos = adicionais_inclusos
     opcoes_extras = [f"{nome} - R${preco:.2f}" for nome, preco in adicionais_extras.items()]
 
     tamanho_opcao = st.selectbox(
-        label="Escolha o tamanho do copo:", 
+        label="Escolha o tamanho do copo:",
         options=tamanhos_select,
-        index=0 if st.session_state.tamanho_select == "" else tamanhos_select.index(st.session_state.tamanho_select),
-        key="tamanho_select"    
+        index=0,
+        key="tamanho_select"
     )
-
-    if tamanho_opcao != st.session_state.tamanho_select:
-        st.session_state.tamanho_select = tamanho_opcao
-        st.session_state.adicionais_selecionados = []
-        st.session_state.adicionais_extras_selecionados = []
-
+    
     tamanhos = {
         "300ml - R$18,00": {"min": 3, "max": 4, "preco": 18.00},
         "500ml - R$20,00": {"min": 3, "max": 6, "preco": 20.00}
     }
-    regras = tamanhos.get(st.session_state.tamanho_select, {"min": 0, "max": 0, "preco": 0.00})
-
+    regras = tamanhos.get(tamanho_opcao, {"min": 0, "max": 0, "preco": 0.00})
     min_adicionais = regras["min"]
     max_adicionais = regras["max"]
     valor_base = regras["preco"]
 
-    adicionais_disabled = st.session_state.tamanho_select == ""
+    adicionais_disabled = tamanho_opcao == ""
     if adicionais_disabled:
         st.warning("Selecione o tamanho do copo antes de adicionar ingredientes.")
 
     st.subheader("Escolha seus adicionais")
-
+    
     novos_adicionais_inclusos_formatados = st.multiselect(
         label="Adicionais inclusos:",
         options=opcoes_inclusos,
-        
-        default=[],
-        disabled=adicionais_disabled,
         key="adicionais_inclusos_multiselect"
     )
 
     novos_adicionais_extras_formatados = st.multiselect(
         label="Adicionais extras (custo adicional):",
         options=opcoes_extras,
-        
-        default=[],
-        disabled=adicionais_disabled,
         key="adicionais_extras_multiselect"
     )
 
-    st.session_state.adicionais_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_inclusos_formatados]
-    st.session_state.adicionais_extras_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_extras_formatados]
+    adicionais_selecionados = novos_adicionais_inclusos_formatados
+    adicionais_extras_selecionados = [nome.split(" - ")[0] for nome in novos_adicionais_extras_formatados]
 
-    total_adicionais = len(st.session_state.adicionais_selecionados) + len(st.session_state.adicionais_extras_selecionados)
+    total_adicionais = len(adicionais_selecionados) + len(adicionais_extras_selecionados)
     erro_limite = not (min_adicionais <= total_adicionais <= max_adicionais)
 
-    if erro_limite:
+    if erro_limite and not adicionais_disabled:
         st.error(f"Você precisa selecionar entre {min_adicionais} e {max_adicionais} adicionais. Selecionados: {total_adicionais}")
 
-    # ------------------------------
-    # CAMPOS DO CLIENTE
-    # ------------------------------
-    st.subheader("Dados do cliente")
-    nome = st.text_input("Nome completo:", key="nome_input")
-    whatsapp = st.text_input("WhatsApp (formato: (xx) 91234-5678):", key="whatsapp_input")
-
-    # forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"], index=None, key="forma_pagamento_radio")
-    forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"], index=st.session_state.forma_pagamento if st.session_state.forma_pagamento in ["Cartão", "Dinheiro", "PIX"] else None, key="forma_pagamento_radio")
-
-    # Campo do troco só aparece se a forma for "Dinheiro"
-    troco = st.text_input("Troco para quanto?", key="troco_input") if forma_pagamento == "Dinheiro" else ""
-
-    troco = "N/A" if forma_pagamento == "Cartão" or forma_pagamento == "PIX" else troco
-
-    # tipo_pedido = st.radio("Tipo:", ["Retirada", "Entrega"], index=None)
-    tipo_pedido = st.radio("Tipo:", ["Retirada", "Entrega"], index=0 if st.session_state.tipo_pedido_radio == "Retirada" else 1 if st.session_state.tipo_pedido_radio == "Entrega" else None, key="tipo_pedido_radio")
-   
-    endereco = st.text_input("Endereço para entrega:", key="endereco_input") if tipo_pedido == "Entrega" else ""
-
-    endereco = "N/A" if tipo_pedido == "Retirada" else endereco
+    valor_extras = sum(adicionais_extras[nome] for nome in adicionais_extras_selecionados)
+    valor_total_item = valor_base + valor_extras
     
-    tamanho = "" if not st.session_state.get('tamanho_select') else st.session_state.get('tamanho_select')
+    # -----------------------------------
+    # BOTÃO ADICIONAR AO CARRINHO
+    # -----------------------------------
+    
+    add_carrinho_disabled = erro_limite or tamanho_opcao == ""
 
-    adicionais_formatados = ""
-    for adicional in st.session_state.adicionais_selecionados:
-        adicionais_formatados += f"<br> - {adicional}"
-
-    extras_formatados = ""
-    for extra in st.session_state.adicionais_extras_selecionados:
-        extras_formatados += f"<br> - {extra} - (R${adicionais_extras[extra]:.2f})"
+    if st.button("➕ Adicionar ao Carrinho", use_container_width=True, disabled=add_carrinho_disabled):
+        item_pedido = {
+            "tamanho": tamanho_opcao,
+            "adicionais": adicionais_selecionados,
+            "extras": adicionais_extras_selecionados,
+            "valor": valor_total_item
+        }
+        st.session_state.carrinho.append(item_pedido)
+        st.success("Item adicionado ao carrinho!")
+        st.session_state.limpar_pedido_solicitado = True
+        st.rerun()
 
     # ------------------------------
-    # CÁLCULO DO VALOR TOTAL
+    # RESUMO DO CARRINHO
     # ------------------------------
-    valor_extras = sum(adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados)
-    valor_total = valor_base + valor_extras
+    
+    st.subheader("🛒 Itens no Carrinho")
 
-    # ------------------------------
-    # RESUMO DO PEDIDO
-    # ------------------------------
-    st.markdown("## 🧾 Resumo do Pedido")
+    if not st.session_state.carrinho:
+        st.info("Seu carrinho está vazio.")
+    else:
+        total_pedido = 0
+        for i, item in enumerate(st.session_state.carrinho):
+            adicionais_str = ", ".join(item['adicionais'])
+            
+            # Formatação robusta para os adicionais extras
+            extras_list_formatada = []
+            for extra_name in item['extras']:
+                # Aqui o valor é lido do dicionário e formatado de forma segura
+                price = adicionais_extras.get(extra_name, 0.0)
+                extras_list_formatada.append(f"{extra_name} (R${price:.2f})")
+            
+            extras_str = ", ".join(extras_list_formatada)
+            
+            st.markdown(f"**Item {i+1}:** {item['tamanho']}")
+            st.markdown(f"*Adicionais Inclusos:* {adicionais_str or 'Nenhum'}")
+            st.markdown(f"*Adicionais Extras:* {extras_str or 'Nenhum'}")
+            st.markdown(f"**Valor do Item:** R$ {item['valor']:.2f}")
+            st.markdown("---")
+            total_pedido += item['valor']
 
-    resumo_html = f"""
-    <div style="background-color: #ffffff; padding: 20px; border-radius: 12px;
-        border: 1px solid #ddd; box-shadow: 2px 2px 8px rgba(0,0,0,0.1); margin-top: 10px; color: #000000;">
-        <p><strong>🍨 Tamanho:</strong> {tamanho or 'Não selecionado'}</p>
-        <p><strong>✔️ Adicionais Inclusos:</strong> {adicionais_formatados or 'Nenhum'}</p>
-        <p><strong>➕ Adicionais Extras:</strong> {extras_formatados or 'Nenhum'}</p>
-        <br>
-        <p><strong>😎 Cliente:</strong> {nome or 'Não informado'}</p>
-        <p><strong>📱 WhatsApp:</strong> {whatsapp or 'Não informado'}</p>
-        <br>
-        <p><strong>💳 Pagamento:</strong> {forma_pagamento or 'Não selecionado'}</p>
-        <p><strong>💰 Troco:</strong> {troco or 'Não informado'}</p>
-        <p><strong>🛵 Tipo de Pedido:</strong> {tipo_pedido or 'Não selecionado'}</p>
-        <p><strong>📌 Endereço:</strong> {endereco or 'Não informado'}</p>
-        <br>
-        <br>
-        <p><strong> 🟢 Valor Total: R$ {valor_total:.2f}
-    </div>
-    """
+        st.markdown(f"**Total do Pedido: R$ {total_pedido:.2f}**")
+        
+        # ------------------------------
+        # CAMPOS DO CLIENTE
+        # ------------------------------
+        st.subheader("Dados do cliente")
+        nome = st.text_input("Nome completo:", key="nome_input")
+        whatsapp = st.text_input("WhatsApp (formato: (xx) 91234-5678):", key="whatsapp_input")
 
-    st.markdown(resumo_html, unsafe_allow_html=True)
+        forma_pagamento = st.radio("Forma de pagamento:", ["Cartão", "Dinheiro", "PIX"], index=None, key="forma_pagamento_radio")
+        troco = st.text_input("Troco para quanto?", key="troco_input") if forma_pagamento == "Dinheiro" else ""
+        
+        tipo_pedido = st.radio("Tipo:", ["Retirada", "Entrega"], index=None, key="tipo_pedido_radio")
+        endereco = st.text_input("Endereço para entrega:", key="endereco_input") if tipo_pedido == "Entrega" else ""
 
-    # --------------------------
-    # BOTÃO DE CONFIRMAR PEDIDO 
-    # --------------------------
-    confirmar_button_disabled = erro_limite or st.session_state.tamanho_select == ""
-
-    if st.button("✅ Confirmar Pedido", disabled=confirmar_button_disabled, use_container_width=True):
-        # Endereço só é obrigatório se o tipo for Entrega
-        if not nome:
-            st.error("Preencha o nome.")
-        elif not whatsapp:
-            st.error("Preencha o número do Whatsapp.")
-        elif not forma_pagamento:
-            st.error("Escolha uma forma de pagamento.")
-        elif tipo_pedido == "Entrega" and not endereco:
-            st.error("Preencha o endereço para a forma de entrega escolhida.")
-        elif erro_limite:
-            st.error("Quantidade de adicionais fora do limite.")
-        else:
-            adicionais_inclusos = ', '.join(st.session_state.adicionais_selecionados)
-            adicionais_extras_texto = ', '.join(st.session_state.adicionais_extras_selecionados)
-            valor_extras = sum([adicionais_extras[nome] for nome in st.session_state.adicionais_extras_selecionados])
-            valor_total = valor_base + valor_extras
-
-            # Se for retirada, mostra "Cliente irá retirar"
+        confirmar_disabled = not nome or not whatsapp or not forma_pagamento or (tipo_pedido == "Entrega" and not endereco)
+        
+        # --------------------------
+        # BOTÃO DE CONFIRMAR PEDIDO FINAL
+        # --------------------------
+        if st.button("✅ Confirmar Pedido Completo", use_container_width=True, disabled=confirmar_disabled):
+            
+            troco_texto = troco if forma_pagamento == "Dinheiro" else "N/A"
             endereco_texto = endereco if tipo_pedido == "Entrega" else "Cliente irá retirar no local"
 
             try:
                 cliente_id = get_existing_cliente(nome=nome, telefone=whatsapp)
-
                 if cliente_id is None:
-                    cliente_id = inserir_cliente(nome=nome, telefone=whatsapp, endereco=endereco)
-
-                adicionais = get_id_produtos(st.session_state.adicionais_selecionados)
-
-                if st.session_state.adicionais_extras_selecionados:
-                    adicionais += get_id_produtos(st.session_state.adicionais_extras_selecionados)
-
-                pedido_id = inserir_pedido(cliente_id=cliente_id, funcionario_id=1, 
-                                            numero=f"PD{datetime.now().strftime('%Y%m%d%H%M%S')}", valor=valor_total, status="Recebido", 
-                                            forma_pagamento=forma_pagamento, forma_retirada=tipo_pedido, data_hora_previsao=datetime.now(), 
-                                            soma_qtd_produto=1, adicionais=', '.join([item[0] for item in adicionais]))
+                    cliente_id = inserir_cliente(nome=nome, telefone=whatsapp, endereco=endereco_texto)
                 
-                for prd in adicionais:
+                # Juntando todos os adicionais de todos os itens do carrinho
+                adicionais_ids = []
+                for item in st.session_state.carrinho:
+                    adicionais_ids.extend(get_id_produtos(item['adicionais']))
+                    adicionais_ids.extend(get_id_produtos(item['extras']))
+                
+                # Certifique-se de que item[0] seja convertido para string
+                adicionais_texto = ', '.join([str(item[0]) for item in adicionais_ids])
+                
+                pedido_id = inserir_pedido(
+                    cliente_id=cliente_id, 
+                    funcionario_id=1, 
+                    numero=f"PD{datetime.now().strftime('%Y%m%d%H%M%S')}", 
+                    valor=total_pedido, 
+                    status="Recebido", 
+                    forma_pagamento=forma_pagamento, 
+                    forma_retirada=tipo_pedido, 
+                    data_hora_previsao=datetime.now(), 
+                    soma_qtd_produto=len(st.session_state.carrinho), 
+                    adicionais=adicionais_texto
+                )
+                
+                for prd in adicionais_ids:
                     update_qtd_produto(prd[0])
-
 
             except Exception as e:
                 st.error(f"Erro ao salvar pedido: {e}")
-                st.stop()
-
-    # --------------------------
-    # INTEGRAÇÃO COM O WHATSAPP
-    # --------------------------
+                # st.stop()
+            
+            # --------------------------
+            # INTEGRAÇÃO COM O WHATSAPP
+            # --------------------------
+            
+            # Preparando a mensagem do WhatsApp com todos os itens
+            mensagem_itens = ""
+            for i, item in enumerate(st.session_state.carrinho):
+                adicionais_item = ", ".join(item['adicionais'])
+                extras_item = ", ".join([f"{e}" for e in item['extras']])
+                
+                mensagem_itens += f"""
+*Item {i+1}:*
+🍨 Copo: {item['tamanho']}
+✔️ Adicionais inclusos: {adicionais_item or 'Nenhum'}
+➕ Adicionais extras: {extras_item or 'Nenhum'}
+"""
+            
             mensagem = f"""
-Ola! Gostaria de fazer um pedido 😀
+Olá! Gostaria de fazer um pedido 😀
 
-Meus dados são:
+*Meus dados são:*
 😎 Nome: {nome}
 📱 WhatsApp: {whatsapp}
 🏡 Endereço: {endereco_texto}
 💳 Forma de pagamento: {forma_pagamento}
 
-E quero um açaí com:
-🍨 Copo: {tamanho}
-✔️ Adicionais inclusos: {adicionais_formatados.replace('<br>','\n')}
-➕ Adicionais extras: {extras_formatados.replace('<br>','\n')}
-
-Total: R$ {valor_total:.2f}
-Troco para: R$ {troco}
+*Meu pedido:*
+{mensagem_itens}
+*Total:* R$ {total_pedido:.2f}
+*Troco para:* R$ {troco_texto}
 
 Obrigado(a)!"""
 
@@ -530,10 +754,9 @@ Obrigado(a)!"""
             """
             st.markdown(redirecionamento_html, unsafe_allow_html=True)
 
-    # ----------------
-    # BOTÃO DE LIMPAR
-    # ----------------
-    if st.button("Limpar Pedido"):
-        
-        st.session_state.limpar_pedido_solicitado = True
-        st.rerun()
+        # ----------------
+        # BOTÃO DE LIMPAR CARRINHO
+        # ----------------
+        if st.button("Limpar Carrinho"):
+            st.session_state.limpar_carrinho_solicitado = True
+            st.rerun()
