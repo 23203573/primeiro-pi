@@ -357,17 +357,21 @@ def exibir_dashboard():
         if not tipos:
             st.info("Não há produtos cadastrados para aumentar o estoque.")
         else:
-            tipo_sel = st.selectbox("Tipo do produto:", options=tipos)
+            tipos_with_empty = [""] + tipos
+            tipo_sel = st.selectbox("Tipo do produto:", options=tipos_with_empty, index=0)
             qtd_aumentar = st.number_input("Quantidade a adicionar", min_value=1, value=1, step=1, key="inc_tipo")
             if st.button("Aumentar estoque"):
-                try:
-                    aumentar_estoque_por_tipo(tipo_sel, qtd_aumentar)
-                    st.success(f"Estoque de '{tipo_sel}' aumentado em {qtd_aumentar}")
-                    # Manter usuário logado e recarregar a página para atualizar tabelas/estados
-                    st.session_state.logado = True
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao aumentar estoque por tipo: {e}")
+                if not tipo_sel:
+                    st.warning("Selecione um tipo antes de aumentar o estoque.")
+                else:
+                    try:
+                        aumentar_estoque_por_tipo(tipo_sel, qtd_aumentar)
+                        st.success(f"Estoque de '{tipo_sel}' aumentado em {qtd_aumentar}")
+                        # Manter usuário logado e recarregar a página para atualizar tabelas/estados
+                        st.session_state.logado = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao aumentar estoque por tipo: {e}")
 
             # Mostrar a tabela de produtos para referência
             st.markdown("---")
@@ -387,18 +391,22 @@ def exibir_dashboard():
         if not tipos_remove:
             st.info("Não há produtos cadastrados para remover.")
         else:
-            tipo_remove = st.selectbox("Tipo do produto para remover:", options=tipos_remove, key="remove_tipo")
+            tipos_remove_with_empty = [""] + tipos_remove
+            tipo_remove = st.selectbox("Tipo do produto para remover:", options=tipos_remove_with_empty, key="remove_tipo", index=0)
             if st.button("Remover produto"):
-                try:
-                    from banco import remover_produto_por_tipo
+                if not tipo_remove:
+                    st.warning("Selecione um tipo antes de remover.")
+                else:
+                    try:
+                        from banco import remover_produto_por_tipo
 
-                    affected = remover_produto_por_tipo(tipo_remove)
-                    st.success(f"Removidos {affected} item(ns) do tipo '{tipo_remove}'")
-                    # Manter logado e recarregar para atualizar a lista
-                    st.session_state.logado = True
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao remover produto: {e}")
+                        affected = remover_produto_por_tipo(tipo_remove)
+                        st.success(f"Removidos {affected} item(ns) do tipo '{tipo_remove}'")
+                        # Manter logado e recarregar para atualizar a lista
+                        st.session_state.logado = True
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao remover produto: {e}")
 
 # ------------------------------
 # LOGO DO SITE E ACESSIBILIDADE NA SIDEBAR
@@ -413,7 +421,7 @@ with st.sidebar:
     
     # 2. BOTÕES DE ACESSIBILIDADE (ZOOM)
     
-    st.markdown("### Acessibilidade")
+    # Títulos dos botões de acessibilidade removidos para simplificar a sidebar
 
     # Este markdown cria o div para que os botões tenham espaço/estilo
     st.markdown(
