@@ -1,8 +1,34 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+import io
 from banco import *
 from datetime import datetime
+
+# PDF generation
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.units import mm
+    # Higher-level platypus API for nicer layouts
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RLImage, Table, TableStyle
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.utils import ImageReader
+except Exception:
+    # reportlab may not be installed in the environment; the app will show an error if user tries to generate PDF
+    A4 = None
+    canvas = None
+    mm = None
+    SimpleDocTemplate = None
+    Paragraph = None
+    Spacer = None
+    RLImage = None
+    Table = None
+    TableStyle = None
+    colors = None
+    getSampleStyleSheet = None
+    ImageReader = None
 
 # -----------------------------------
 # LÓGICA DO ZOOM (ACESSIBILIDADE)
@@ -135,17 +161,22 @@ st.markdown(
         /* Cor de fundo da PÍLULA/TAG selecionada (usamos o BaseUI Tag) */
         div[data-testid="stMultiSelect"] div[data-baseweb="tag"] {{
             background-color: white !important; /* Fundo branco */
-            border: 1px solid #732C4D !important; /* Adiciona uma borda para delimitar */
+            border: 1px solid #e0e0e0 !important; /* Borda clara para delimitar */
         }}
 
-        /* Cor do texto dentro da PÍLULA/TAG (garantindo o texto na cor principal) */
+        /* Texto e fundo da PÍLULA/TAG: fundo branco com texto preto */
         div[data-testid="stMultiSelect"] div[data-baseweb="tag"] span {{
-            color: #732C4D !important; /* Cor principal dos seus textos */
+            background-color: #ffffff !important; /* Fundo branco na própria label */
+            color: #000000 !important; /* Texto preto para melhor contraste */
+            padding: 2px 6px !important;
+            border-radius: 6px !important;
+            display: inline-block !important;
+            line-height: 1 !important;
         }}
-        
-        /* Cor do ícone de remover (o 'x') dentro da PÍLULA/TAG */
+
+        /* Cor do ícone de remover (o 'x') dentro da PÍLULA/TAG (preto) */
         div[data-testid="stMultiSelect"] div[data-baseweb="tag"] svg {{
-            fill: #732C4D !important; /* Cor principal para o 'x' */
+            fill: #000000 !important; /* Ícone 'x' em preto */
         }}
         
         /* --------------------------------- */
@@ -273,6 +304,135 @@ def exibir_dashboard():
             prd_statistics[produto] = 1
         
 
+    # --- Relatório PDF: botão para gerar relatório semanal com vendas e estoque ---
+    def _create_weekly_report_pdf(total_vendas: float, total_pedidos: int, vendas_by_day: dict, adicionais_stats: dict, estoque_list: list) -> bytes:
+        """
+        Gera um PDF com layout melhorado usando ReportLab Platypus:
+        - título e timestamp
+        - resumo numérico
+        - gráfico de vendas por dia (matplotlib embutido)
+        - tabela de adicionais mais pedidos
+        - tabela de produtos em estoque
+        Retorna os bytes do PDF.
+        """
+        if A4 is None or SimpleDocTemplate is None:
+            raise RuntimeError("biblioteca reportlab não está instalada")
+
+        buf = io.BytesIO()
+        doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=15*mm, rightMargin=15*mm, topMargin=20*mm, bottomMargin=15*mm)
+        styles = getSampleStyleSheet()
+        elems = []
+
+        # Title
+        elems.append(Paragraph("Relatório Semanal - Doces Lalumare", styles['Title']))
+        elems.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}", styles['Normal']))
+        elems.append(Spacer(1, 6))
+
+        # Summary
+        elems.append(Paragraph("Resumo de Vendas", styles['Heading2']))
+        elems.append(Paragraph(f"Total de vendas (R$): <b>{total_vendas:.2f}</b>", styles['Normal']))
+        elems.append(Paragraph(f"Total de pedidos: <b>{total_pedidos}</b>", styles['Normal']))
+        elems.append(Spacer(1, 6))
+
+        # Gráfico de vendas por dia (matplotlib)
+        try:
+            import matplotlib.pyplot as plt
+            dias = list(vendas_by_day.keys())
+            vals = list(vendas_by_day.values())
+            fig, ax = plt.subplots(figsize=(6, 2.5), dpi=150)
+            ax.bar(dias, vals, color='#732C4D')
+            ax.set_title('Vendas por Dia')
+            ax.set_ylabel('Pedidos')
+            plt.tight_layout()
+            imgbuf = io.BytesIO()
+            fig.savefig(imgbuf, format='png', bbox_inches='tight')
+            plt.close(fig)
+            imgbuf.seek(0)
+            elems.append(RLImage(imgbuf, width=160*mm, height=50*mm))
+            elems.append(Spacer(1, 8))
+        except Exception:
+            # If matplotlib missing or error, skip chart gracefully
+            elems.append(Paragraph("(Gráfico indisponível)", styles['Normal']))
+            elems.append(Spacer(1, 6))
+
+        # Adicionais table
+        elems.append(Paragraph("Adicionais mais pedidos", styles['Heading2']))
+        adicionais_rows = [["Adicional", "Quantidade"]]
+        for adicional, cont in list(adicionais_stats.items())[:30]:
+            adicionais_rows.append([str(adicional), str(cont)])
+        tbl = Table(adicionais_rows, colWidths=[100*mm, 30*mm])
+        tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F2BBC5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#732C4D')),
+            ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold')
+        ]))
+        elems.append(tbl)
+        elems.append(Spacer(1, 8))
+
+        # Estoque table
+        elems.append(Paragraph("Produtos em Estoque", styles['Heading2']))
+        stock_rows = [["Nome/Tipo", "Quantidade", "Valor"]]
+        for prd in estoque_list:
+            try:
+                # Some rows have type at index 1
+                tipo = prd[0] if len(prd) > 1 else ""
+                qtd = prd[1] if len(prd) > 2 else (prd[1] if len(prd) > 1 else "")
+                # Try to find valor and unidade in known positions
+                valor = prd[2] if len(prd) > 3 else ""
+                un = prd[3] if len(prd) > 4 else (prd[3] if len(prd) > 3 else "")
+                # Normalize types to strings and format valor with 2 decimals
+                try:
+                    # try to parse numeric value (accept comma or dot as decimal separator)
+                    valor_num = float(str(valor).replace(',', '.'))
+                    valor_str = f'R$ {valor_num:.2f}'
+                except Exception:
+                    # fallback: show original value if present, otherwise empty
+                    valor_str = f'R$ {valor}' if valor not in (None, '') else ''
+                stock_rows.append([str(tipo), f'{str(qtd)} {str(un)}', valor_str])
+            except Exception:
+                stock_rows.append([str(prd), "", "", ""]) 
+        tbl2 = Table(stock_rows, colWidths=[80*mm, 40*mm, 40*mm])
+        tbl2.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F2BBC5')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.HexColor('#732C4D')),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('ALIGN', (2,1), (3,-1), 'RIGHT')
+        ]))
+        elems.append(tbl2)
+
+        # Build PDF
+        doc.build(elems)
+        buf.seek(0)
+        return buf.read()
+
+    # Botão para gerar o PDF
+    try:
+        vendas_by_day = {
+            "Segunda": vendas_seg,
+            "Terça": vendas_ter,
+            "Quarta": vendas_qua,
+            "Quinta": vendas_qui,
+            "Sexta": vendas_sex,
+            "Sábado": vendas_sab,
+            "Domingo": vendas_dom,
+        }
+
+        if st.button("Gerar relatório"):
+            try:
+                # Buscar o estoque atual do banco de dados no momento da geração do relatório
+                estoque_atual = get_produto_status()
+                pdf_bytes = _create_weekly_report_pdf(total_vendas, total_pedidos, vendas_by_day, prd_statistics, estoque_atual)
+                filename = f"relatorio_semanal_{datetime.now().strftime('%Y%m%d')}.pdf"
+                st.download_button("Download do relatório (PDF)", data=pdf_bytes, file_name=filename, mime="application/pdf")
+            except Exception as e:
+                st.error(f"Não foi possível gerar o PDF: {e}")
+    except Exception:
+        # Se algo falhar na geração do relatório, mostramos um aviso simples
+        st.warning("Função de geração de relatório indisponível no momento.")
+
     st.subheader("🥄 Adicionais Mais Pedidos")
     dados_adicionais = prd_statistics
 
@@ -333,7 +493,7 @@ def exibir_dashboard():
         nova_qtd = st.number_input("Quantidade inicial", min_value=0, value=1, step=1)
         novo_valor = st.number_input("Valor (R$)", min_value=0.0, value=0.0, step=0.5, format="%.2f")
         nova_un = st.text_input("Unidade de medida", value="un")
-        nova_qtd_pedido = st.number_input("Quantidade no pedido", min_value=0, value=0, step=1)
+        nova_qtd_pedido = st.number_input("Quantidade no pedido (g)", min_value=0, value=0, step=1)
 
         if st.button("Adicionar produto"):
             try:
@@ -392,7 +552,7 @@ def exibir_dashboard():
             st.info("Não há produtos cadastrados para remover.")
         else:
             tipos_remove_with_empty = [""] + tipos_remove
-            tipo_remove = st.selectbox("Tipo do produto para remover:", options=tipos_remove_with_empty, key="remove_tipo", index=0)
+            tipo_remove = st.selectbox("Nome do produto", options=tipos_remove_with_empty, key="remove_tipo", index=0)
             if st.button("Remover produto"):
                 if not tipo_remove:
                     st.warning("Selecione um tipo antes de remover.")
