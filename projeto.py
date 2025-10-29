@@ -178,6 +178,33 @@ st.markdown(
         div[data-testid="stMultiSelect"] div[data-baseweb="tag"] svg {{
             fill: #000000 !important; /* Ícone 'x' em preto */
         }}
+
+            /* --------------------------------- */
+            /* FORÇAR FUNDO BRANCO NA CAIXA DO MULTISELECT E TEXTOS PRETOS */
+            /* Cobrir variações internas do Streamlit/BaseUI para garantir contraste */
+            /* Aplica à área que mostra os valores selecionados e ao input interno */
+            div[data-testid="stMultiSelect"] div[data-baseweb="select"],
+            div[data-testid="stMultiSelect"] div[data-baseweb="select"] div,
+            .stMultiSelect div[data-baseweb="select"],
+            [data-testid="stMultiSelect"] [role="combobox"],
+            [data-testid="stSelectbox"] div[data-baseweb="select"],
+            [data-testid="stSelectbox"] div[data-baseweb="select"] div,
+            div[data-baseweb="select"] input,
+            .stMultiSelect input,
+            .stSelectbox input {{
+                /* Não forçar fundo branco no seletor principal para preservar a cor cinza
+                   do 'campo' do select/selectbox. Apenas garantir que o texto interno
+                   fique preto quando for exibido (por exemplo, dentro das tags). */
+                color: #000000 !important; /* texto preto */
+            }}
+
+            /* Placeholder dentro do select/multiselect com contraste adequado (cinza claro) */
+            div[data-baseweb="select"] div::placeholder,
+            .stMultiSelect input::placeholder,
+            .stSelectbox input::placeholder {{
+                color: #9a9a9a !important;
+                opacity: 1 !important;
+            }}
         
         /* --------------------------------- */
         /* ESTILOS DE BOTÕES E ACESSIBILIDADE */
@@ -234,6 +261,33 @@ st.markdown(
 
         /* Em alguns widgets o texto selecionado dentro do componente é um span interno */
         [data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea, [data-baseweb="select"] div {{
+            color: #ffffff !important;
+        }}
+
+        /* Reforçar estilo das 'pílulas' (tags) do MultiSelect para acessibilidade
+           - fundo branco e texto preto (melhor contraste)
+           - aplicar selectors adicionais para cobrir variações internas do Streamlit/BaseUI */
+        div[data-testid="stMultiSelect"] div[data-baseweb="tag"],
+        .stMultiSelect div[data-baseweb="tag"],
+        div[data-baseweb="tag"] span,
+        div[data-baseweb="tag"] {{
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #e0e0e0 !important;
+        }}
+
+        /* Ícone de remover (x) nas tags em preto para contraste */
+        div[data-testid="stMultiSelect"] div[data-baseweb="tag"] svg,
+        div[data-baseweb="tag"] svg {{
+            fill: #000000 !important;
+        }}
+
+        /* Selecionado (valor mostrado) nas caixas de select/multiselect deve ficar com texto branco
+           enquanto o fundo da caixa permanece cinza (preservando o visual original) */
+        [data-testid="stSelectbox"] div[data-baseweb="select"] div,
+        [data-testid="stMultiSelect"] div[data-baseweb="select"] div,
+        .stSelectbox [data-baseweb="select"] div,
+        .stMultiSelect [data-baseweb="select"] div {{
             color: #ffffff !important;
         }}
 
@@ -785,19 +839,34 @@ else:
     adicionais_disabled = tamanho_opcao == ""
     if adicionais_disabled:
         st.warning("Selecione o tamanho do copo antes de adicionar ingredientes.")
+        # Garantir que não existam seleções anteriores enquanto o seletor estiver desabilitado
+        try:
+            st.session_state['adicionais_inclusos_multiselect'] = []
+        except Exception:
+            pass
+        try:
+            st.session_state['adicionais_extras_multiselect'] = []
+        except Exception:
+            pass
 
     st.subheader("Escolha seus adicionais")
     
     novos_adicionais_inclusos_formatados = st.multiselect(
         label="Adicionais inclusos:",
         options=opcoes_inclusos,
-        key="adicionais_inclusos_multiselect"
+        key="adicionais_inclusos_multiselect",
+        default=[],
+        placeholder="",
+        disabled=adicionais_disabled
     )
 
     novos_adicionais_extras_formatados = st.multiselect(
         label="Adicionais extras (custo adicional):",
         options=opcoes_extras,
-        key="adicionais_extras_multiselect"
+        key="adicionais_extras_multiselect",
+        default=[],
+        placeholder="",
+        disabled=adicionais_disabled
     )
 
     adicionais_selecionados = novos_adicionais_inclusos_formatados
