@@ -217,6 +217,26 @@ st.markdown(
             flex: 1 1 0% !important;
         }}
         
+        /* --------------------------------- */
+        /* CONTRASTE: forçar texto dos campos de input para branco (acessibilidade) */
+        /* Aplica a campos de texto, textarea, selects e placeholders */
+        input, textarea, select, option,
+        input[type="text"], input[type="password"], input[type="email"], input[type="tel"],
+        .stTextInput input, .stTextArea textarea, .stNumberInput input {{
+            color: #ffffff !important;
+        }}
+
+        /* Placeholder com contraste adequado */
+        input::placeholder, textarea::placeholder {{
+            color: #e6e6e6 !important;
+            opacity: 1 !important;
+        }}
+
+        /* Em alguns widgets o texto selecionado dentro do componente é um span interno */
+        [data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea, [data-baseweb="select"] div {{
+            color: #ffffff !important;
+        }}
+
     </style>
     """,
     unsafe_allow_html=True
@@ -371,9 +391,14 @@ def exibir_dashboard():
         elems.append(tbl)
         elems.append(Spacer(1, 8))
 
-        # Estoque table
+        # Estoque table (ordenar alfabeticamente por nome/tipo antes de construir a tabela)
         elems.append(Paragraph("Produtos em Estoque", styles['Heading2']))
         stock_rows = [["Nome/Tipo", "Quantidade", "Valor"]]
+        try:
+            estoque_list = sorted(estoque_list, key=lambda p: str(p[0]).lower() if p and len(p) > 0 else "")
+        except Exception:
+            estoque_list = list(estoque_list)
+
         for prd in estoque_list:
             try:
                 # Some rows have type at index 1
@@ -467,12 +492,18 @@ def exibir_dashboard():
 
     estoque = get_produto_status()
 
+    # Ordenar o estoque alfabeticamente por nome/tipo (case-insensitive)
+    try:
+        estoque_sorted = sorted(estoque, key=lambda p: str(p[0]).lower() if p and len(p) > 0 and p[0] is not None else "")
+    except Exception:
+        estoque_sorted = list(estoque)
+
     produtos = []
     quantidades = []
     valores = []
     medidas = []
 
-    for prd in estoque:
+    for prd in estoque_sorted:
         produtos.append(str(prd[0]))
         quantidades.append(str(prd[1]))
         valores.append(str(prd[2]))
@@ -507,7 +538,7 @@ def exibir_dashboard():
                     existe = any((p[1] is not None and str(p[1]).strip().lower() == nome_limpo) for p in produtos_existentes)
 
                     if existe:
-                        st.error(f"Produto '{novo_tipo}' já existe no banco de dados. Use 'Aumentar estoque existente' para incrementar a quantidade.")
+                        st.error("Produto já cadastrado no estoque")
                     else:
                         new_id = adicionar_produto(novo_tipo, nova_qtd, novo_valor, nova_un, nova_qtd_pedido)
                         st.success(f"Produto '{novo_tipo}' adicionado com id {new_id}")
