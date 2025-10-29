@@ -496,14 +496,26 @@ def exibir_dashboard():
         nova_qtd_pedido = st.number_input("Quantidade no pedido (g)", min_value=0, value=0, step=1)
 
         if st.button("Adicionar produto"):
-            try:
-                new_id = adicionar_produto(novo_tipo, nova_qtd, novo_valor, nova_un, nova_qtd_pedido)
-                st.success(f"Produto '{novo_tipo}' adicionado com id {new_id}")
-                # Manter usuário logado e recarregar a página para atualizar tabelas/estados
-                st.session_state.logado = True
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erro ao adicionar produto: {e}")
+            # Validação: nome do produto obrigatório
+            if not novo_tipo or str(novo_tipo).strip() == "":
+                st.error("Informe o nome do produto antes de adicionar.")
+            else:
+                try:
+                    # Verifica se já existe um produto com mesmo nome (case-insensitive)
+                    produtos_existentes = get_all_produtos()
+                    nome_limpo = str(novo_tipo).strip().lower()
+                    existe = any((p[1] is not None and str(p[1]).strip().lower() == nome_limpo) for p in produtos_existentes)
+
+                    if existe:
+                        st.error(f"Produto '{novo_tipo}' já existe no banco de dados. Use 'Aumentar estoque existente' para incrementar a quantidade.")
+                    else:
+                        new_id = adicionar_produto(novo_tipo, nova_qtd, novo_valor, nova_un, nova_qtd_pedido)
+                        st.success(f"Produto '{novo_tipo}' adicionado com id {new_id}")
+                        # Manter usuário logado e recarregar a página para atualizar tabelas/estados
+                        st.session_state.logado = True
+                        st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao adicionar produto: {e}")
 
     with st.expander("Aumentar estoque existente"):
         # Carregar todos os produtos e montar um dropdown de tipos únicos
