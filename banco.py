@@ -20,6 +20,7 @@ def inserir_cliente(nome, telefone, endereco):
         """
         guid = str(uuid.uuid4())
         cursor.execute(sql, (guid, nome, telefone, endereco))
+        print(f"Inserir Cliente: {cursor.statement}")
         conn.commit()
         id_cliente = cursor.lastrowid
         cursor.close()
@@ -47,6 +48,7 @@ def inserir_funcionario(nome, login, senha, email):
 def inserir_pedido(cliente_id, funcionario_id, numero, valor, status, forma_pagamento, forma_retirada, data_hora_previsao, soma_qtd_produto, adicionais):
     conn = conectar()
     cursor = conn.cursor()
+    print("batata")
     sql = """
         INSERT INTO pedido (
             id_pedido, id_cliente, id_funcionario, numero, valor, status,
@@ -59,6 +61,7 @@ def inserir_pedido(cliente_id, funcionario_id, numero, valor, status, forma_paga
         guid, cliente_id, funcionario_id, numero, valor, status,
         forma_pagamento, forma_retirada, agora, data_hora_previsao, soma_qtd_produto, adicionais
     ))
+    print(f"Inserir Pedido: {cursor.statement}")
     conn.commit()
     id_pedido = cursor.lastrowid
     cursor.close()
@@ -141,16 +144,20 @@ def get_extras():
     
 def get_id_produtos(list_produtos):
     try:
+        # Guard: se a lista está vazia, não construir uma cláusula IN vazia (causa erro SQL 1064)
+        if not list_produtos:
+            return []
+
         conn = conectar()
         cursor = conn.cursor()
         placeholders = ', '.join(['%s'] * len(list_produtos))
         sql = f"SELECT id_produto FROM produto WHERE tipo_produto IN ({placeholders});"
         cursor.execute(sql, tuple(list_produtos))
+        print(f"Get Id Produtos: {cursor.statement}")
         result = cursor.fetchall()
         cursor.close()
         conn.close()
         return result
-    
     except Exception as e:
         raise e
     
@@ -158,8 +165,39 @@ def update_qtd_produto(id_produto):
     try:
         conn = conectar()
         cursor = conn.cursor()
-        sql = "UPDATE produto SET qtd_produto = qtd_produto - qtd_pedido WHERE id_produto = %s;"
-        cursor.execute(sql, (int(id_produto),))
+
+        # Buscar os valores atuais do produto de forma a evitar que o banco
+        # tente realizar operações aritméticas sobre colunas que são VARCHAR
+        # (isso pode levar a erros de conversão, ex: MySQL 1292).
+        cursor.execute("SELECT qtd_produto, qtd_pedido FROM produto WHERE id_produto = %s", (id_produto,))
+        row = cursor.fetchone()
+        if not row:
+            cursor.close()
+            conn.close()
+            return
+
+        qtd_produto_raw, qtd_pedido_raw = row
+
+        # Tentar converter para inteiro/float com fallback seguro
+        try:
+            atual = int(str(qtd_produto_raw))
+        except Exception:
+            try:
+                atual = int(float(str(qtd_produto_raw)))
+            except Exception:
+                atual = 0
+
+        try:
+            pedido_qtd = int(str(qtd_pedido_raw))
+        except Exception:
+            try:
+                pedido_qtd = int(float(str(qtd_pedido_raw)))
+            except Exception:
+                pedido_qtd = 0
+
+        novo_valor = max(0, atual - pedido_qtd)
+
+        cursor.execute("UPDATE produto SET qtd_produto = %s WHERE id_produto = %s;", (str(novo_valor), id_produto))
         conn.commit()
         cursor.close()
         conn.close()
@@ -214,7 +252,7 @@ def get_produto(id_produto):
         conn = conectar()
         cursor = conn.cursor()
         sql = "select tipo_produto from produto where id_produto = %s;"
-        cursor.execute(sql, (int(id_produto),))
+        cursor.execute(sql, (id_produto,))
         result = cursor.fetchall()
         cursor.close()
         conn.close()

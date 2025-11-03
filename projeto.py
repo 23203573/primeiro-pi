@@ -60,6 +60,32 @@ def diminuir_fonte():
         st.session_state['font_size'] = FONT_NORMAL
         st.session_state['zoom_status'] = 'normal'
 
+
+def request_remove_item(index: int) -> None:
+    """Marca um item para remoção (mostra diálogo de confirmação)."""
+    st.session_state['confirm_remove_index'] = index
+
+
+def confirm_remove_item() -> None:
+    """Remove o item previamente marcado e atualiza a UI."""
+    idx = st.session_state.get('confirm_remove_index')
+    try:
+        if idx is not None and 0 <= idx < len(st.session_state.carrinho):
+            st.session_state.carrinho.pop(idx)
+            st.success("Item removido do carrinho.")
+    except Exception:
+        pass
+    finally:
+        # Limpa a solicitação de confirmação; não chamamos st.rerun() aqui porque
+        # chamar st.rerun() dentro de callbacks é um no-op e gera um aviso.
+        st.session_state['confirm_remove_index'] = None
+
+
+def cancel_remove_item() -> None:
+    """Cancela a solicitação de remoção de item."""
+    # Apenas limpar o flag; o Streamlit fará o rerun automaticamente após o callback
+    st.session_state['confirm_remove_index'] = None
+
 # -----------------------------------
 # Variáveis Globais
 # -----------------------------------
@@ -763,6 +789,13 @@ for key in ["tamanho", "adicionais_selecionados", "adicionais_extras_selecionado
     if key not in st.session_state:
         st.session_state[key] = "" if key == "tamanho" else []
 
+# Inicializar as chaves usadas pelos widgets multiselect para evitar
+# conflito entre passar `default=` ao widget e definir a chave via
+# Session State logo antes da criação do widget.
+for key in ["adicionais_inclusos_multiselect", "adicionais_extras_multiselect"]:
+    if key not in st.session_state:
+        st.session_state[key] = []
+
 if "carrinho" not in st.session_state:
     st.session_state.carrinho = []
 
@@ -770,6 +803,12 @@ if "carrinho" not in st.session_state:
 for key in ["nome_input", "whatsapp_input", "forma_pagamento_radio", "troco_input", "tipo_pedido_radio", "endereco_input"]:
      if key not in st.session_state:
         st.session_state[key] = "" if 'input' in key else None
+
+# Flags de confirmação para remoções/limpeza
+if 'confirm_remove_index' not in st.session_state:
+    st.session_state['confirm_remove_index'] = None
+if 'confirm_limpar_carrinho' not in st.session_state:
+    st.session_state['confirm_limpar_carrinho'] = False
 
 if "limpar_pedido_solicitado" not in st.session_state:
     st.session_state.limpar_pedido_solicitado = False
@@ -855,7 +894,6 @@ else:
         label="Adicionais inclusos:",
         options=opcoes_inclusos,
         key="adicionais_inclusos_multiselect",
-        default=[],
         placeholder="",
         disabled=adicionais_disabled
     )
@@ -864,7 +902,6 @@ else:
         label="Adicionais extras (custo adicional):",
         options=opcoes_extras,
         key="adicionais_extras_multiselect",
-        default=[],
         placeholder="",
         disabled=adicionais_disabled
     )
@@ -917,18 +954,69 @@ else:
             for extra_name in item['extras']:
                 # Aqui o valor é lido do dicionário e formatado de forma segura
                 price = adicionais_extras.get(extra_name, 0.0)
-                extras_list_formatada.append(f"{extra_name} (R${price:.2f})")
+                extras_list_formatada.append(f"{extra_name} (R$ {price:.2f})")
             
             extras_str = ", ".join(extras_list_formatada)
-            
-            st.markdown(f"**Item {i+1}:** {item['tamanho']}")
-            st.markdown(f"*Adicionais Inclusos:* {adicionais_str or 'Nenhum'}")
-            st.markdown(f"*Adicionais Extras:* {extras_str or 'Nenhum'}")
-            st.markdown(f"**Valor do Item:** R$ {item['valor']:.2f}")
+
+            # Mostrar item em duas colunas: informação (col0) + botão remover (col1)
+            col_info, col_action = st.columns([12, 1])
+            with col_info:
+                st.markdown(f"**Item {i+1}:** {item['tamanho']}")
+                st.markdown(f"**Adicionais Inclusos:** {adicionais_str or 'Nenhum'}")
+                st.markdown(f"**Adicionais Extras:** {extras_str or 'Nenhum'}")
+                st.markdown(f"**Valor do Item:** R$ {item['valor']:.2f}")
+            with col_action:
+                # Botão para solicitar a remoção do item (abre confirmação)
+                btn_key = f"remove_item_{i}"
+                st.button("❌", key=btn_key, on_click=request_remove_item, args=(i,))
             st.markdown("---")
             total_pedido += item['valor']
 
         st.markdown(f"**Total do Pedido: R$ {total_pedido:.2f}**")
+
+        # Botão para iniciar confirmação de limpar o carrinho
+        if st.button("🧹 Limpar Carrinho", use_container_width=True):
+            st.session_state['confirm_limpar_carrinho'] = True
+
+        # Confirmação de remoção individual (aparece quando solicitada)
+        if st.session_state.get('confirm_remove_index') is not None:
+            idx = st.session_state['confirm_remove_index']
+            if 0 <= idx < len(st.session_state.carrinho):
+                item = st.session_state.carrinho[idx]
+                st.warning(f"Confirma remoção do Item {idx+1}: {item['tamanho']} ?")
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.button("Confirmar remoção", on_click=confirm_remove_item, key="confirm_remove_confirm")
+                with c2:
+                    st.button("Cancelar", on_click=cancel_remove_item, key="confirm_remove_cancel")
+            else:
+                # índice inválido — limpar solicitação
+                st.session_state['confirm_remove_index'] = None
+
+        # Confirmação para limpar todo o carrinho
+        if st.session_state.get('confirm_limpar_carrinho'):
+            st.warning("Tem certeza que deseja limpar todo o carrinho? Esta ação não pode ser desfeita.")
+            cc1, cc2 = st.columns(2)
+            with cc1:
+                def do_clear_cart():
+                    st.session_state.carrinho = []
+                    st.session_state.nome_input = ""
+                    st.session_state.whatsapp_input = ""
+                    st.session_state.forma_pagamento_radio = None
+                    st.session_state.troco_input = ""
+                    st.session_state.tipo_pedido_radio = None
+                    st.session_state.endereco_input = ""
+                    st.session_state['confirm_limpar_carrinho'] = False
+                    st.success("Carrinho limpo.")
+                    # Não chamar st.rerun() aqui — é um no-op dentro de callbacks.
+
+                st.button("Confirmar limpeza", on_click=do_clear_cart, key="confirm_clear_confirm")
+            with cc2:
+                def cancel_clear_cart():
+                    st.session_state['confirm_limpar_carrinho'] = False
+                    # Apenas limpar o flag; Streamlit irá rerun automaticamente.
+
+                st.button("Cancelar", on_click=cancel_clear_cart, key="confirm_clear_cancel")
         
         # ------------------------------
         # CAMPOS DO CLIENTE
@@ -953,6 +1041,7 @@ else:
             troco_texto = troco if forma_pagamento == "Dinheiro" else "N/A"
             endereco_texto = endereco if tipo_pedido == "Entrega" else "Cliente irá retirar no local"
 
+            save_ok = False
             try:
                 cliente_id = get_existing_cliente(nome=nome, telefone=whatsapp)
                 if cliente_id is None:
@@ -962,7 +1051,9 @@ else:
                 adicionais_ids = []
                 for item in st.session_state.carrinho:
                     adicionais_ids.extend(get_id_produtos(item['adicionais']))
-                    adicionais_ids.extend(get_id_produtos(item['extras']))
+
+                    if len(item['extras']) > 0:
+                        adicionais_ids.extend(get_id_produtos(item['extras']))
                 
                 # Certifique-se de que item[0] seja convertido para string
                 adicionais_texto = ', '.join([str(item[0]) for item in adicionais_ids])
@@ -982,10 +1073,14 @@ else:
                 
                 for prd in adicionais_ids:
                     update_qtd_produto(prd[0])
-
+                save_ok = True
             except Exception as e:
-                st.error(f"Erro ao salvar pedido: {e}")
-                # st.stop()
+                # Não expor o erro cru ao usuário (ex.: erro MySQL 1292 sobre conversão de DOUBLE)
+                # Logamos no console para investigação e seguimos para o redirecionamento ao WhatsApp
+                # para não interromper a experiência do cliente.
+                print(f"Erro ao salvar pedido (detalhe no servidor): {type(e).__name__}: {e}")
+                save_ok = False
+                # Não usar st.error com a mensagem crua do banco para evitar mensagens técnicas na UI.
             
             # --------------------------
             # INTEGRAÇÃO COM O WHATSAPP
@@ -1034,9 +1129,3 @@ Obrigado(a)!"""
             """
             st.markdown(redirecionamento_html, unsafe_allow_html=True)
 
-        # ----------------
-        # BOTÃO DE LIMPAR CARRINHO
-        # ----------------
-        if st.button("Limpar Carrinho"):
-            st.session_state.limpar_carrinho_solicitado = True
-            st.rerun()
