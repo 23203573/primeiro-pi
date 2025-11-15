@@ -257,7 +257,11 @@ def get_produto(id_produto):
         cursor.close()
         conn.close()
     
-        return result[0][0]
+        # Verificar se há resultado antes de acessar
+        if result and len(result) > 0:
+            return result[0][0]
+        else:
+            return None  # Produto não encontrado
     except Exception as e:
         raise e
 

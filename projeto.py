@@ -398,10 +398,11 @@ def exibir_dashboard():
 
     for n in all_numbers:
         produto = get_produto(n)
-        if produto in prd_statistics:
-            prd_statistics[produto] += 1
-        else:
-            prd_statistics[produto] = 1
+        if produto is not None:  # Só processa se o produto foi encontrado
+            if produto in prd_statistics:
+                prd_statistics[produto] += 1
+            else:
+                prd_statistics[produto] = 1
         
 
     # --- Relatório PDF: botão para gerar relatório semanal com vendas e estoque ---
@@ -671,25 +672,48 @@ def exibir_dashboard():
             if tipo not in tipos_remove:
                 tipos_remove.append(tipo)
 
+        # Inicializar session state para confirmação
+        if 'confirm_remove_produto' not in st.session_state:
+            st.session_state['confirm_remove_produto'] = None
+
         if not tipos_remove:
             st.info("Não há produtos cadastrados para remover.")
         else:
             tipos_remove_with_empty = [""] + tipos_remove
             tipo_remove = st.selectbox("Nome do produto", options=tipos_remove_with_empty, key="remove_tipo", index=0)
+            
+            # Verificar se o botão "Remover produto" foi clicado
             if st.button("Remover produto"):
                 if not tipo_remove:
                     st.warning("Selecione um tipo antes de remover.")
                 else:
-                    try:
-                        from banco import remover_produto_por_tipo
-
-                        affected = remover_produto_por_tipo(tipo_remove)
-                        st.success(f"Removidos {affected} item(ns) do tipo '{tipo_remove}'")
-                        # Manter logado e recarregar para atualizar a lista
-                        st.session_state.logado = True
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao remover produto: {e}")
+                    # Marcar para confirmação
+                    st.session_state['confirm_remove_produto'] = tipo_remove
+            
+            # Se há confirmação pendente, mostrar diálogo
+            if st.session_state['confirm_remove_produto'] is not None:
+                produto_para_remover = st.session_state['confirm_remove_produto']
+                st.warning(f"Tem certeza de que gostaria de remover o produto '{produto_para_remover}'?")
+                
+                col_sim, col_nao = st.columns(2)
+                with col_sim:
+                    if st.button("Sim", key="confirm_sim"):
+                        try:
+                            from banco import remover_produto_por_tipo
+                            affected = remover_produto_por_tipo(produto_para_remover)
+                            st.success(f"Removidos {affected} item(ns) do tipo '{produto_para_remover}'")
+                            # Limpar confirmação e manter logado
+                            st.session_state['confirm_remove_produto'] = None
+                            st.session_state.logado = True
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao remover produto: {e}")
+                            st.session_state['confirm_remove_produto'] = None
+                
+                with col_nao:
+                    if st.button("Não", key="confirm_nao"):
+                        # Cancelar remoção - não precisa de st.rerun() aqui
+                        st.session_state['confirm_remove_produto'] = None
 
 # ------------------------------
 # LOGO DO SITE E ACESSIBILIDADE NA SIDEBAR
