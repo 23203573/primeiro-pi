@@ -999,7 +999,7 @@ else:
         st.markdown(f"**Total do Pedido: R$ {total_pedido:.2f}**")
 
         # Botão para iniciar confirmação de limpar o carrinho
-        if st.button("🧹 Limpar Carrinho", use_container_width=True):
+        if st.button("Limpar Carrinho", use_container_width=True):
             st.session_state['confirm_limpar_carrinho'] = True
 
         # Confirmação de remoção individual (aparece quando solicitada)
@@ -1007,7 +1007,7 @@ else:
             idx = st.session_state['confirm_remove_index']
             if 0 <= idx < len(st.session_state.carrinho):
                 item = st.session_state.carrinho[idx]
-                st.warning(f"Confirma remoção do Item {idx+1}: {item['tamanho']} ?")
+                st.warning(f"Confirma remoção do Item {idx+1} - R$ {item['valor']:.2f}?")
                 c1, c2 = st.columns(2)
                 with c1:
                     st.button("Confirmar remoção", on_click=confirm_remove_item, key="confirm_remove_confirm")
