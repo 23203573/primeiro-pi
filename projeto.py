@@ -978,7 +978,7 @@ else:
             for extra_name in item['extras']:
                 # Aqui o valor é lido do dicionário e formatado de forma segura
                 price = adicionais_extras.get(extra_name, 0.0)
-                extras_list_formatada.append(f"{extra_name} (R$ {price:.2f})")
+                extras_list_formatada.append(f"{extra_name} (R\$ {price:.2f})")
             
             extras_str = ", ".join(extras_list_formatada)
 
